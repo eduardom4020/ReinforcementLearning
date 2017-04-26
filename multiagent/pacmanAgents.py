@@ -8,9 +8,24 @@
 
 from pacman import Directions
 from game import Agent
+from multiAgents import ReflexAgent
 import random
 import game
 import util
+
+class QLearningAgent(ReflexAgent):
+	
+	def runReflexAgent(self):
+		self._run_reflex_agent = True 
+	
+	def getAction(self, gameState):
+		return "oi"
+		
+	def update_weights(self, currGameState, action):
+		return "oi" 
+	
+	
+	
 
 class LeftTurnAgent(game.Agent):
   "An agent that turns left at every opportunity"
@@ -44,3 +59,4 @@ class GreedyAgent(Agent):
   
 def scoreEvaluation(state):
   return state.getScore()  
+  

@@ -39,6 +39,8 @@ from game import Directions
 from game import Actions
 from util import nearestPoint
 from util import manhattanDistance
+import pacmanAgents
+#from pacmanAgents import QLearningAgent
 import util, layout
 import sys, types, time, random, os
 
@@ -254,15 +256,24 @@ class ClassicGameRules:
   def __init__(self, timeout=30):
     self.timeout = timeout
 
-  def newGame( self, layout, pacmanAgent, ghostAgents, display, quiet = False, catchExceptions=False):
-    agents = [pacmanAgent] + ghostAgents[:layout.getNumGhosts()]
-    initState = GameState()
-    initState.initialize( layout, len(ghostAgents) )
-    game = Game(agents, display, self, catchExceptions=catchExceptions)
-    game.state = initState
-    self.initialState = initState.deepCopy()
-    self.quiet = quiet
-    return game
+  def newGame( self, layout, pacmanAgent, ghostAgents, display, game_num=-1, quiet = False, catchExceptions=False):
+  	
+  	#GAME INITIALIZATION
+  	if pacmanAgent.__class__.__name__ != 'QLearningAgent':
+  		agents = [pacmanAgent] + ghostAgents[:layout.getNumGhosts()]
+  	elif game_num == 0:
+  		q_agent = QLearningAgent(pacmanAgent)
+  		q_agent.runReflexAgent()
+  		
+  		agents = [q_agent] + ghostAgents[:layout.getNumGhosts()]  		
+  		
+  	initState = GameState()
+  	initState.initialize( layout, len(ghostAgents) )
+  	game = Game(agents, display, self, catchExceptions=catchExceptions)
+  	game.state = initState
+  	self.initialState = initState.deepCopy()
+  	self.quiet = quiet
+  	return game
 
   def process(self, state, game):
     """
@@ -608,6 +619,7 @@ def replayGame( layout, actions, display ):
 
     display.finish()
 
+#RUN GAME!!!!
 def runGames( layout, pacman, ghosts, display, numGames, record, numTraining = 0, catchExceptions=False, timeout=30 ):
   import __main__
   __main__.__dict__['_display'] = display
@@ -625,7 +637,7 @@ def runGames( layout, pacman, ghosts, display, numGames, record, numTraining = 0
     else:
         gameDisplay = display
         rules.quiet = False
-    game = rules.newGame( layout, pacman, ghosts, gameDisplay, beQuiet, catchExceptions)
+    game = rules.newGame( layout, pacman, ghosts, gameDisplay, i, beQuiet, catchExceptions)
     game.run()
     if not beQuiet: games.append(game)
 
