@@ -36,7 +36,7 @@ class ReflexAgent(Agent):
     legalMoves = gameState.getLegalActions()
 
     # Choose one of the best actions
-    evaluations = [self.evaluationFunction(gameState, action) for action in legalMoves]
+    evaluations = [self.evaluationFunction(gameState, action) + self.run_feature_function(action) for action in legalMoves]
     bestEvaluation = max(evaluations)
     bestIndices = [index for index in range(len(evaluations)) if evaluations[index] == bestEvaluation]
     chosenIndex = random.choice(bestIndices) # Pick randomly among the best
@@ -48,7 +48,7 @@ class ReflexAgent(Agent):
 
     #if(len(self.cache) != 0):
     #  self.cacheAction(legalMoves[chosenIndex])
-      
+
     return legalMoves[chosenIndex]      
 
   def evaluationFunction(self, currGameState, pacManAction):
@@ -70,6 +70,7 @@ class ReflexAgent(Agent):
     nextGameState = currGameState.generatePacmanSuccessor(pacManAction)
     newPos = nextGameState.getPacmanPosition()
     oldFood = currGameState.getFood()
+    walls = currGameState.getWalls()
     newGhostStates = nextGameState.getGhostStates()
     newScaredTimes = [ghostState.scaredTimer for ghostState in newGhostStates]
 
@@ -83,6 +84,16 @@ class ReflexAgent(Agent):
           distance = Space.distance(newPos, food_pos)
           if distance < min_food_distance:
             min_food_distance = distance
+            
+    max_wall_distance = -1
+
+    for x, wall_row in enumerate(walls):
+      for y, wall in enumerate(wall_row):
+        if wall == True:
+          wall_pos = [x, y]
+          distance = Space.distance(newPos, wall_pos)
+          if distance > max_wall_distance:
+            max_wall_distance = distance
 
     min_ghost_distance = 999999
 
@@ -91,7 +102,7 @@ class ReflexAgent(Agent):
         if distance < min_ghost_distance:
           min_ghost_distance = distance
     
-    return nextGameState.getScore() + min_ghost_distance * self.ghost_dist_mult - min_food_distance * self.food_dist_mult
+    return nextGameState.getScore() + min_ghost_distance * self.ghost_dist_mult - min_food_distance * self.food_dist_mult - max_wall_distance * self.wall_dist_mult
 
 def scoreEvaluationFunction(currentGameState):
   """

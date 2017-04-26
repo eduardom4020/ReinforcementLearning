@@ -28,12 +28,14 @@ class Agent:
 
   def registerInitialState(self, state): # inspects the starting state
   """
-  def __init__(self, cache_len=3, food_dist_mult=10, ghost_dist_mult=4, index=0):
+  def __init__(self, cache_len=3, food_dist_mult=10, ghost_dist_mult=11, wall_dist_mult=5, index=0):
     self.index = index
     self.cache = [ [-1, -1] ] * cache_len
     self.cache_it = 0
     self.food_dist_mult = food_dist_mult
     self.ghost_dist_mult = ghost_dist_mult
+    self.wall_dist_mult = wall_dist_mult
+    self.actions_repeats = {'North': 0, 'South': 0, 'East': 0, 'West': 0, 'Stop': 0}
 
   def getAction(self, state):
     """
@@ -41,6 +43,10 @@ class Agent:
     must return an action from Directions.{North, South, East, West, Stop}
     """
     raiseNotDefined()
+    
+  def run_feature_function(self, action, const=25):
+  	self.actions_repeats[action] += 1
+  	return const/self.actions_repeats[action]
 
   def cacheAction(self, action):
     self.cache[self.cache_it] = action
