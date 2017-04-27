@@ -13,9 +13,10 @@ import random
 import game
 import util
 
+#OBS: This is a OFF-POLICY QLarning agent, so it needs to run a training set before play a game
 class QLearningAgent(Agent):
 	
-	def runAgentForPolicy(self, Agent):
+	def runAgentPolicy(self, Agent):
 		self.agent_policy = True
 		self.agent = Agent
 	
@@ -24,7 +25,16 @@ class QLearningAgent(Agent):
                         return self.agent.getAction(gameState)
                 else:
                         return "oi"
-		
+
+        """get the maximum Q value for the state gameState. This is obtained
+           analizing all of the LEGAL ACTIONS for that gameState.
+           Note that the Q value to be analized is independent from the action
+           that the agent takes
+        """
+                
+        def maxQ(self, gameState):
+                legalMoves = gameState.getLegalActions()
+	
 	def update_weights(self, currGameState, action):
 		return "oi" 
 	

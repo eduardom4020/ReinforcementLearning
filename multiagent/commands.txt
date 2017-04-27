@@ -13,3 +13,4 @@ python pacman.py -p AlphaBetaAgent -l trappedClassic -a depth=3 -q -n 10
 python pacman.py -p ExpectimaxAgent -l trappedClassic -a depth=3 -q -n 10
 python pacman.py -l smallClassic -p ExpectimaxAgent -a evalFn=better -q -n 10
 python pacman.py -l contestClassic -p ContestAgent -g DirectionalGhost -q -n 10
+python pacman.py -p QLearningAgent -k 1

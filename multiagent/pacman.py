@@ -255,14 +255,14 @@ class ClassicGameRules:
   def __init__(self, timeout=30):
     self.timeout = timeout
 
-  def newGame( self, layout, pacmanAgent, ghostAgents, display, game_num=-1, quiet = False, catchExceptions=False):
+  def newGame( self, layout, pacmanAgent, ghostAgents, display, agentPolicy, epoch_num, quiet = False, catchExceptions=False):
   	
   	#GAME INITIALIZATION
   	if pacmanAgent.__class__.__name__ != 'QLearningAgent':
   		agents = [pacmanAgent] + ghostAgents[:layout.getNumGhosts()]
-  	elif game_num == 0:
-  		q_agent = pacmanAgent# as pacmanAgents.QLearningAgent
-  		q_agent.activateReflexAgent()
+  	else:
+  		q_agent = pacmanAgent
+  		q_agent.runAgentPolicy(agentPolicy)
   		
   		agents = [q_agent] + ghostAgents[:layout.getNumGhosts()]  		
   		
@@ -520,6 +520,9 @@ def readCommand( argv ):
   #Custom options:
   parser.add_option('-e', '--numEpochs', dest='numEpochs', type='int',
                     help=default('the number of Epochs that plays a n number of GAMES'), default=1)
+  parser.add_option('-P', '--agentPolicy', dest='agentPolicy',
+                    help=default('the agent POLICY to be used for training QLearning Pacman. Enter a agent TYPE name to run his POLICY to train QLearning agent'),
+                    default='ReflexAgent')
 
   options, otherjunk = parser.parse_args(argv)
   if len(otherjunk) != 0:
@@ -535,13 +538,18 @@ def readCommand( argv ):
 
   # Choose a Pacman agent
   noKeyboard = options.gameToReplay == None and (options.textGraphics or options.quietGraphics)
-  pacmanType = loadAgent(options.pacman, noKeyboard)
+  pacmanType = loadAgent(options.pacman, noKeyboard)  
   agentOpts = parseAgentArgs(options.agentArgs)
   if options.numTraining > 0:
     args['numTraining'] = options.numTraining
     if 'numTraining' not in agentOpts: agentOpts['numTraining'] = options.numTraining
   pacman = pacmanType(**agentOpts) # Instantiate Pacman with agentArgs
   args['pacman'] = pacman
+
+  #custom
+  policyType = loadAgent(options.agentPolicy, noKeyboard)
+  policy = policyType(**agentOpts)
+  args['agentPolicy'] = policy
 
   # Don't display training games
   if 'numTrain' in agentOpts:
@@ -624,7 +632,7 @@ def replayGame( layout, actions, display ):
     display.finish()
 
 #RUN GAME!!!!
-def runGames( layout, pacman, ghosts, display, numGames, numEpochs, record, numTraining = 0, catchExceptions=False, timeout=30 ):
+def runGames( layout, pacman, ghosts, display, numGames, numEpochs, agentPolicy, record, numTraining = 0, catchExceptions=False, timeout=30 ):
   import __main__
   __main__.__dict__['_display'] = display
 
@@ -642,7 +650,7 @@ def runGames( layout, pacman, ghosts, display, numGames, numEpochs, record, numT
       else:
           gameDisplay = display
           rules.quiet = False
-      game = rules.newGame( layout, pacman, ghosts, gameDisplay, i, beQuiet, catchExceptions)
+      game = rules.newGame( layout, pacman, ghosts, gameDisplay, agentPolicy, x, beQuiet, catchExceptions)
       game.run()
       if not beQuiet: games.append(game)
 
