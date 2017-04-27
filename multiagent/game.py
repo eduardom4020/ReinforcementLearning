@@ -21,7 +21,7 @@ except:
 # Parts worth reading #
 #######################
 
-class Agent:
+class Agent(object): #NewStyle notation, it won't exists for python3. It's usefull for super()
   """
   An agent must define a getAction method, but may also define the
   following methods which will be called if they exist:

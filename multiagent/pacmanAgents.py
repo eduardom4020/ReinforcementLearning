@@ -19,7 +19,10 @@ class QLearningAgent(ReflexAgent):
 		self._run_reflex_agent = True 
 	
 	def getAction(self, gameState):
-		return "oi"
+		if self._run_reflex_agent == True:
+                        return super(QLearningAgent, self).getAction(gameState)
+                else:
+                        return "oi"
 		
 	def update_weights(self, currGameState, action):
 		return "oi" 

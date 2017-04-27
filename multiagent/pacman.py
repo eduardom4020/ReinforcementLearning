@@ -39,8 +39,7 @@ from game import Directions
 from game import Actions
 from util import nearestPoint
 from util import manhattanDistance
-import pacmanAgents
-#from pacmanAgents import QLearningAgent
+#import pacmanAgents
 import util, layout
 import sys, types, time, random, os
 
@@ -262,8 +261,8 @@ class ClassicGameRules:
   	if pacmanAgent.__class__.__name__ != 'QLearningAgent':
   		agents = [pacmanAgent] + ghostAgents[:layout.getNumGhosts()]
   	elif game_num == 0:
-  		q_agent = QLearningAgent(pacmanAgent)
-  		q_agent.runReflexAgent()
+  		q_agent = pacmanAgent# as pacmanAgents.QLearningAgent
+  		q_agent.activateReflexAgent()
   		
   		agents = [q_agent] + ghostAgents[:layout.getNumGhosts()]  		
   		
@@ -518,6 +517,10 @@ def readCommand( argv ):
   parser.add_option('--timeout', dest='timeout', type='int',
                     help=default('Maximum length of time an agent can spend computing in a single game'), default=30)
 
+  #Custom options:
+  parser.add_option('-e', '--numEpochs', dest='numEpochs', type='int',
+                    help=default('the number of Epochs that plays a n number of GAMES'), default=1)
+
   options, otherjunk = parser.parse_args(argv)
   if len(otherjunk) != 0:
     raise Exception('Command line input not understood: ' + str(otherjunk))
@@ -561,6 +564,7 @@ def readCommand( argv ):
     import graphicsDisplay
     args['display'] = graphicsDisplay.PacmanGraphics(options.zoom, frameTime = options.frameTime)
   args['numGames'] = options.numGames
+  args['numEpochs'] = options.numEpochs
   args['record'] = options.record
   args['catchExceptions'] = options.catchExceptions
   args['timeout'] = options.timeout
@@ -620,43 +624,44 @@ def replayGame( layout, actions, display ):
     display.finish()
 
 #RUN GAME!!!!
-def runGames( layout, pacman, ghosts, display, numGames, record, numTraining = 0, catchExceptions=False, timeout=30 ):
+def runGames( layout, pacman, ghosts, display, numGames, numEpochs, record, numTraining = 0, catchExceptions=False, timeout=30 ):
   import __main__
   __main__.__dict__['_display'] = display
 
   rules = ClassicGameRules(timeout)
   games = []
 
-  for i in range( numGames ):
-    beQuiet = i < numTraining
-    if beQuiet:
-        # Suppress output and graphics
-        import textDisplay
-        gameDisplay = textDisplay.NullGraphics()
-        rules.quiet = True
-    else:
-        gameDisplay = display
-        rules.quiet = False
-    game = rules.newGame( layout, pacman, ghosts, gameDisplay, i, beQuiet, catchExceptions)
-    game.run()
-    if not beQuiet: games.append(game)
+  for x in range( numEpochs ):
+    for i in range( numGames ):
+      beQuiet = i < numTraining
+      if beQuiet:
+          # Suppress output and graphics
+          import textDisplay
+          gameDisplay = textDisplay.NullGraphics()
+          rules.quiet = True
+      else:
+          gameDisplay = display
+          rules.quiet = False
+      game = rules.newGame( layout, pacman, ghosts, gameDisplay, i, beQuiet, catchExceptions)
+      game.run()
+      if not beQuiet: games.append(game)
 
-    if record:
-      import time, cPickle
-      fname = ('recorded-game-%d' % (i + 1)) +  '-'.join([str(t) for t in time.localtime()[1:6]])
-      f = file(fname, 'w')
-      components = {'layout': layout, 'actions': game.moveHistory}
-      cPickle.dump(components, f)
-      f.close()
+      if record:
+        import time, cPickle
+        fname = ('recorded-game-%d' % (i + 1)) +  '-'.join([str(t) for t in time.localtime()[1:6]])
+        f = file(fname, 'w')
+        components = {'layout': layout, 'actions': game.moveHistory}
+        cPickle.dump(components, f)
+        f.close()
 
-  if (numGames-numTraining) > 0:
-    scores = [game.state.getScore() for game in games]
-    wins = [game.state.isWin() for game in games]
-    winRate = wins.count(True)/ float(len(wins))
-    print 'Average Score:', sum(scores) / float(len(scores))
-    print 'Scores:       ', ', '.join([str(score) for score in scores])
-    print 'Win Rate:      %d/%d (%.2f)' % (wins.count(True), len(wins), winRate)
-    print 'Record:       ', ', '.join([ ['Loss', 'Win'][int(w)] for w in wins])
+    if (numGames-numTraining) > 0:
+      scores = [game.state.getScore() for game in games]
+      wins = [game.state.isWin() for game in games]
+      winRate = wins.count(True)/ float(len(wins))
+      print 'Average Score:', sum(scores) / float(len(scores))
+      print 'Scores:       ', ', '.join([str(score) for score in scores])
+      print 'Win Rate:      %d/%d (%.2f)' % (wins.count(True), len(wins), winRate)
+      print 'Record:       ', ', '.join([ ['Loss', 'Win'][int(w)] for w in wins])
 
   return games
 
