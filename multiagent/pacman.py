@@ -262,6 +262,8 @@ class ClassicGameRules:
   		agents = [pacmanAgent] + ghostAgents[:layout.getNumGhosts()]
   	else:
   		q_agent = pacmanAgent
+  		q_agent.initializeWeights()
+  		q_agent.setAlphaAndGama()
   		q_agent.runAgentPolicy(agentPolicy)
   		
   		agents = [q_agent] + ghostAgents[:layout.getNumGhosts()]  		

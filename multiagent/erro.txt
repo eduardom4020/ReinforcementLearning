@@ -1,0 +1,14 @@
+Traceback (most recent call last):
+  File "pacman.py", line 690, in <module>
+    runGames( **args )
+  File "pacman.py", line 656, in runGames
+    game.run()
+  File "C:\Users\Eduardo\Documents\UFC\7 semestre\Reiforcement Learning\multiagent\ReinforcementLearning\multiagent\game.py", line 660, in run
+    action = agent.getAction(observation)
+  File "C:\Users\Eduardo\Documents\UFC\7 semestre\Reiforcement Learning\multiagent\ReinforcementLearning\multiagent\pacmanAgents.py", line 33, in getAction
+    self.updateWeights(gameState, action)
+  File "C:\Users\Eduardo\Documents\UFC\7 semestre\Reiforcement Learning\multiagent\ReinforcementLearning\multiagent\pacmanAgents.py", line 62, in updateWeights
+    self.w1 = self.w1 + self.alpha * ((reward + self.gama * self.Q(nextGameState, action)) - self.Q(currGameState, action)) * self.featureFunctions(currGameState, action)
+  File "C:\Users\Eduardo\Documents\UFC\7 semestre\Reiforcement Learning\multiagent\ReinforcementLearning\multiagent\pacmanAgents.py", line 47, in Q
+    bestEvaluation = max(evaluations)
+ValueError: max() arg is an empty sequence

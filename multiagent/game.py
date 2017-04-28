@@ -21,44 +21,22 @@ except:
 # Parts worth reading #
 #######################
 
-class Agent(object): #NewStyle notation, it won't exists for python3. It's usefull for super()
+class Agent: #NewStyle notation, it won't exists for python3. It's usefull for super()
   """
   An agent must define a getAction method, but may also define the
   following methods which will be called if they exist:
 
   def registerInitialState(self, state): # inspects the starting state
   """
-  def __init__(self, cache_len=3, food_dist_mult=14, ghost_dist_mult=15, wall_dist_mult=7, index=0):
+  def __init__(self, index=0):
     self.index = index
-    self.cache = [ [-1, -1] ] * cache_len
-    self.cache_it = 0
-    self.food_dist_mult = food_dist_mult
-    self.ghost_dist_mult = ghost_dist_mult
-    self.wall_dist_mult = wall_dist_mult
-    self.actions_repeats = {'North': 0, 'South': 0, 'East': 0, 'West': 0, 'Stop': 0}
-
+    
   def getAction(self, state):
     """
     The Agent will receive a GameState (from either {pacman, capture, sonar}.py) and
     must return an action from Directions.{North, South, East, West, Stop}
     """
     raiseNotDefined()
-
-  def cacheAction(self, action):
-    self.cache[self.cache_it] = action
-    self.cache_it += 1
-    if self.cache_it == len(self.cache):
-      self.cache_it = 0
-
-  def is_in_cache(self, action):
-    if len(self.cache) == 0:
-      return False
-    else:
-      for pos in self.cache:
-        if pos == action:         
-          return True
-
-    return False
 
 class Directions:
   NORTH = 'North'

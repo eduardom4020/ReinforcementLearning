@@ -101,8 +101,8 @@ class ReflexAgent(Agent):
         distance = Space.distance(newPos, ghost.getPosition())
         if distance < min_ghost_distance:
           min_ghost_distance = distance
-    
-    return nextGameState.getScore() + min_ghost_distance * self.ghost_dist_mult - min_food_distance * self.food_dist_mult - max_wall_distance * self.wall_dist_mult
+    #return nextGameState.getScore() + min_ghost_distance * self.ghost_dist_mult - min_food_distance * self.food_dist_mult - max_wall_distance * self.wall_dist_mult
+    return nextGameState.getScore() + min_ghost_distance - min_food_distance - max_wall_distance
 
 def scoreEvaluationFunction(currentGameState):
   """

@@ -19,10 +19,19 @@ class QLearningAgent(Agent):
 	def runAgentPolicy(self, Agent):
 		self.agent_policy = True
 		self.agent = Agent
+		
+        def initializeWeights(self, w1=1):
+                self.w1 = w1
+
+        def setAlphaAndGama(self, alpha=0.2, gama=1):
+                self.alpha = alpha
+                self.gama = gama
 	
 	def getAction(self, gameState):
 		if self.agent_policy == True:
-                        return self.agent.getAction(gameState)
+                        action = self.agent.getAction(gameState)
+                        self.updateWeights(gameState, action)
+                        return action
                 else:
                         return "oi"
 
@@ -32,13 +41,31 @@ class QLearningAgent(Agent):
            that the agent takes
         """
                 
-        def maxQ(self, gameState):
+        def Q(self, gameState, action):
                 legalMoves = gameState.getLegalActions()
+                evaluations = [self.featureFunctions(gameState, action) for action in legalMoves]
+                bestEvaluation = max(evaluations)
+                bestIndices = [index for index in range(len(evaluations)) if evaluations[index] == bestEvaluation]
+                maxQ = random.choice(bestIndices)
+                return maxQ
 	
-	def update_weights(self, currGameState, action):
-		return "oi" 
-	
-	
+	def updateWeights(self, currGameState, action):
+                nextGameState = currGameState.generatePacmanSuccessor(action)
+
+                reward = 0
+                
+                if(currGameState.isWin == True):
+                        reward = 1000
+                if(currGameState.isLose == True):
+                        reward = -500
+   
+                self.w1 = self.w1 + self.alpha * ((reward + self.gama * self.Q(nextGameState, action)) - self.Q(currGameState, action)) * self.featureFunctions(currGameState, action)
+
+	def featureFunctions(self, currGameState, action):
+        #teacher's sugestion: use only scores value for evaluation. It can permits that the agent adapt itself to many others levels
+                nextGameState = currGameState.generatePacmanSuccessor(action)
+
+                return nextGameState.getScore()
 	
 
 class LeftTurnAgent(game.Agent):
