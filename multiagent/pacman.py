@@ -516,7 +516,7 @@ def readCommand( argv ):
                     help=default('the agent POLICY to be used for training QLearning Pacman. Enter a agent TYPE name to run his POLICY to train QLearning agent'),
                     default='ReflexAgent')
   parser.add_option('-A', '--alpha', dest='alpha', type='int',
-                    help=default('alpha value for QLearning'), default=0.2)
+                    help=default('alpha value for QLearning'), default=0.02)
   parser.add_option('-G', '--gama', dest='gama', type='int',
                     help=default('gama value for QLearning'), default=1)
   parser.add_option('-R', '--result', action='store_true', dest='result',
