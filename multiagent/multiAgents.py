@@ -42,12 +42,6 @@ class ReflexAgent(Agent):
     chosenIndex = random.choice(bestIndices) # Pick randomly among the best
 
     "Add more of your code here if you want to"
-    #if self.is_in_cache(legalMoves[chosenIndex]) == True:
-      #try to take a oposite position index for chosenIndex
-    #  chosenIndex = len(legalMoves) - chosenIndex - 1
-
-    #if(len(self.cache) != 0):
-    #  self.cacheAction(legalMoves[chosenIndex])
 
     return legalMoves[chosenIndex]      
 

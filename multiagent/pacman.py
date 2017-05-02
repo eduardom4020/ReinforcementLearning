@@ -42,6 +42,7 @@ from util import manhattanDistance
 #import pacmanAgents
 import util, layout
 import sys, types, time, random, os
+import cPickle as pickle
 
 ###################################################
 # YOUR INTERFACE TO THE PACMAN WORLD: A GameState #
@@ -255,19 +256,8 @@ class ClassicGameRules:
   def __init__(self, timeout=30):
     self.timeout = timeout
 
-  def newGame( self, layout, pacmanAgent, ghostAgents, display, agentPolicy, epoch_num, quiet = False, catchExceptions=False):
-  	
-  	#GAME INITIALIZATION
-  	if pacmanAgent.__class__.__name__ != 'QLearningAgent':
-  		agents = [pacmanAgent] + ghostAgents[:layout.getNumGhosts()]
-  	else:
-  		q_agent = pacmanAgent
-  		q_agent.initializeWeights()
-  		q_agent.setAlphaAndGama()
-  		q_agent.runAgentPolicy(agentPolicy)
-  		
-  		agents = [q_agent] + ghostAgents[:layout.getNumGhosts()]  		
-  		
+  def newGame( self, layout, pacmanAgent, ghostAgents, display, agentPolicy, quiet = False, catchExceptions=False):  		
+  	agents = [pacmanAgent] + ghostAgents[:layout.getNumGhosts()]  	  		
   	initState = GameState()
   	initState.initialize( layout, len(ghostAgents) )
   	game = Game(agents, display, self, catchExceptions=catchExceptions)
@@ -525,6 +515,14 @@ def readCommand( argv ):
   parser.add_option('-P', '--agentPolicy', dest='agentPolicy',
                     help=default('the agent POLICY to be used for training QLearning Pacman. Enter a agent TYPE name to run his POLICY to train QLearning agent'),
                     default='ReflexAgent')
+  parser.add_option('-A', '--alpha', dest='alpha', type='int',
+                    help=default('alpha value for QLearning'), default=0.2)
+  parser.add_option('-G', '--gama', dest='gama', type='int',
+                    help=default('gama value for QLearning'), default=1)
+  parser.add_option('-R', '--result', action='store_true', dest='result',
+                    help=default('play a game with the resulting QLearning agent after the training'), default=False)
+  parser.add_option('-N', '--new', action='store_true', dest='new',
+                    help=default('begin a new training'), default=False)
 
   options, otherjunk = parser.parse_args(argv)
   if len(otherjunk) != 0:
@@ -578,6 +576,10 @@ def readCommand( argv ):
   args['record'] = options.record
   args['catchExceptions'] = options.catchExceptions
   args['timeout'] = options.timeout
+  args['alpha'] = options.alpha
+  args['gama'] = options.gama
+  args['result'] = options.result
+  args['new'] = options.new
 
   # Special case: recorded games don't use the runGames method or args structure
   if options.gameToReplay != None:
@@ -634,14 +636,32 @@ def replayGame( layout, actions, display ):
     display.finish()
 
 #RUN GAME!!!!
-def runGames( layout, pacman, ghosts, display, numGames, numEpochs, agentPolicy, record, numTraining = 0, catchExceptions=False, timeout=30 ):
+def runGames( layout, pacman, ghosts, display, numGames, numEpochs, agentPolicy, alpha, gama, result, new, record, numTraining = 0, catchExceptions=False, timeout=30 ):
   import __main__
   __main__.__dict__['_display'] = display
 
   rules = ClassicGameRules(timeout)
   games = []
 
+  if pacman.__class__.__name__ == 'QLearningAgent':
+    file_name = "weights.pac"
+    
+    pacman.setAlphaAndGama(alpha, gama)
+    pacman.runAgentPolicy(agentPolicy)
+    pacman.initalizeFeatures()
+
+    if result == True:
+      pacman.setAgentPolicy(False)
+      pacman.setAlphaAndGama(0, gama)
+
+    if new == True and os.path.isfile("./" + file_name):
+      os.remove(file_name)
+
   for x in range( numEpochs ):
+    
+    if x > 0:
+      pacman.setAgentPolicy(False)
+      
     for i in range( numGames ):
       beQuiet = i < numTraining
       if beQuiet:
@@ -652,9 +672,41 @@ def runGames( layout, pacman, ghosts, display, numGames, numEpochs, agentPolicy,
       else:
           gameDisplay = display
           rules.quiet = False
-      game = rules.newGame( layout, pacman, ghosts, gameDisplay, agentPolicy, x, beQuiet, catchExceptions)
+
+      #QLearning important things
+      if pacman.__class__.__name__ == 'QLearningAgent':
+          feature_weights = []
+      
+          try:
+            file = open(file_name,'rb')
+            
+            for w in range( pacman.getFeaturesCount() ):
+              weight = pickle.load(file)
+              feature_weights.append(weight)
+              
+            file.close()
+            os.remove(file_name)
+            
+          except (OSError, IOError) as e:
+          #initialize file if it doesn't exists
+            for w in range( pacman.getFeaturesCount() ):
+              weight = 1
+              feature_weights.append(weight)
+                  
+
+          pacman.initializeWeights(feature_weights)
+          
+      game = rules.newGame( layout, pacman, ghosts, gameDisplay, agentPolicy, beQuiet, catchExceptions)
       game.run()
       if not beQuiet: games.append(game)
+
+      if pacman.__class__.__name__ == 'QLearningAgent': 
+        file = open(file_name,"wb")
+        
+        for w in pacman.getWeights():
+          pickle.dump(w, file)
+          
+        file.close()   
 
       if record:
         import time, cPickle
