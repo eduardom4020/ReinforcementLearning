@@ -345,6 +345,7 @@ class PacmanRules:
     x,y = position
     # Eat food
     if state.data.food[x][y]:
+      #goto_food_score
       state.data.scoreChange += 10
       state.data.food = state.data.food.copy()
       state.data.food[x][y] = False
@@ -352,7 +353,7 @@ class PacmanRules:
       # TODO: cache numFood?
       numFood = state.getNumFood()
       if numFood == 0 and not state.data._lose:
-        state.data.scoreChange += 500
+        #state.data.scoreChange += 500
         state.data._win = True
     # Eat capsule
     if( position in state.getCapsules() ):
@@ -420,14 +421,16 @@ class GhostRules:
 
   def collide( state, ghostState, agentIndex):
     if ghostState.scaredTimer > 0:
-      state.data.scoreChange += 200
+      #goto_score_scared_time
+      #state.data.scoreChange += 200
       GhostRules.placeGhost(state, ghostState)
       ghostState.scaredTimer = 0
       # Added for first-person
       state.data._eaten[agentIndex] = True
     else:
       if not state.data._win:
-        state.data.scoreChange -= 500
+        #goto_lose
+        #state.data.scoreChange -= 500
         state.data._lose = True
   collide = staticmethod( collide )
 
@@ -516,7 +519,7 @@ def readCommand( argv ):
                     help=default('the agent POLICY to be used for training QLearning Pacman. Enter a agent TYPE name to run his POLICY to train QLearning agent'),
                     default='ReflexAgent')
   parser.add_option('-A', '--alpha', dest='alpha', type='int',
-                    help=default('alpha value for QLearning'), default=0.02)
+                    help=default('alpha value for QLearning'), default=0.2)
   parser.add_option('-G', '--gama', dest='gama', type='int',
                     help=default('gama value for QLearning'), default=1)
   parser.add_option('-R', '--result', action='store_true', dest='result',
@@ -659,8 +662,8 @@ def runGames( layout, pacman, ghosts, display, numGames, numEpochs, agentPolicy,
 
   for x in range( numEpochs ):
     
-    if x > 0:
-      pacman.setAgentPolicy(False)
+    """if x > 0:
+      pacman.setAgentPolicy(False)"""
       
     for i in range( numGames ):
       beQuiet = i < numTraining
@@ -703,6 +706,7 @@ def runGames( layout, pacman, ghosts, display, numGames, numEpochs, agentPolicy,
       if pacman.__class__.__name__ == 'QLearningAgent': 
         file = open(file_name,"wb")
         
+        print pacman.getWeights()
         for w in pacman.getWeights():
           pickle.dump(w, file)
           

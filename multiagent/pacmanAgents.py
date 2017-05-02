@@ -18,6 +18,7 @@ class QLearningAgent(Agent):
     #change the value of self.num_features to specify how many feature functions are used, and define the feature in the array
     def initalizeFeatures(self):
         self.num_features = 1
+        self.first_action = True
 
     def getFeaturesCount(self):
         return self.num_features
@@ -25,14 +26,14 @@ class QLearningAgent(Agent):
     def setAgentPolicy(self, state):
         self.agent_policy = state
 	
-	def runAgentPolicy(self, Agent):
-		self.setAgentPolicy(True)
-		self.agent = Agent
+    def runAgentPolicy(self, Agent):
+	self.setAgentPolicy(True)
+	self.agent = Agent
 		
     def initializeWeights(self, weights):
         self.weights = []
         for w in weights:
-                self.weights.append(w)                        
+            self.weights.append(w)                        
 
     def setAlphaAndGama(self, alpha, gama):
         self.alpha = alpha
@@ -41,10 +42,14 @@ class QLearningAgent(Agent):
     def getWeights(self):
         return self.weights                
 	
-	def getAction(self, gameState):
-		if self.agent_policy == True:
+    def getAction(self, gameState):
+        if self.first_action:
+            self.max_score = gameState.getNumFood() * 10.0
+            self.first_action = False
+        
+	if self.agent_policy:            
             action = self.agent.getAction(gameState)
-            self.updateWeights(gameState, action)
+            self.updateWeights(gameState, action)                         
             return action
         else:
             # Collect legal moves and successor states
@@ -54,6 +59,7 @@ class QLearningAgent(Agent):
             evaluations = [self.Q(gameState, action) for action in legalMoves]
             bestEvaluation = max(evaluations)
             bestIndices = [index for index in range(len(evaluations)) if evaluations[index] == bestEvaluation]
+            #print bestIndices
             chosenIndex = random.choice(bestIndices) # Pick randomly among the best
 
             "Add more of your code here if you want to"
@@ -67,27 +73,34 @@ class QLearningAgent(Agent):
         """
         
     def Q(self, gameState, action):
-        return sum( self.feature(currGameState, action, feature) * self.weights[feature] for feature in range( self.num_features ) )
+        #print self.weights[0]
+        return sum( self.feature(gameState, action, feature) * self.weights[feature] for feature in range( self.num_features ) )
 	
-	def updateWeights(self, currGameState, action):
+    def updateWeights(self, currGameState, action):
         reward = 0
 
         nextGameState = currGameState.generatePacmanSuccessor(action)
         legalMovesNext = nextGameState.getLegalActions()
 
-        if(currGameState.isLose == True):
-            reward = -500
-        
-        if(currGameState.isWin == True):
-            reward = 1000
-
         for i, w in enumerate( self.weights ):
-            w = w + self.alpha * ((reward + self.gama * max( self.Q(nextGameState, actionNext)) ) - self.Q(currGameState, action)) * self.feature(currGameState, action, i) for actionNext in legalMovesNext
+            q_next = [self.Q(nextGameState, action_next) for action_next in legalMovesNext]
+            if len(q_next) == 0:
+                if nextGameState.isLose():
+                    reward = -500
+        
+                if nextGameState.isWin():
+                    reward = 1000
+                    
+                q_next = [self.Q(currGameState, action)]
+
+            self.weights[i] = self.weights[i] + self.alpha * (reward + self.gama * max(q_next) - self.Q(currGameState, action)) * self.feature(currGameState, action, i)
+            #print self.weights[i]
+            #print self.feature(currGameState, action, i)
 
     def feature(self, currGameState, action, feature_num):
         #teacher's sugestion: use only scores value for evaluation. It can permits that the agent adapt itself to many others levels        
         if feature_num == 0:
-            return currGameState.getScore()
+            return currGameState.getScore() / self.max_score
 	
 
 class LeftTurnAgent(game.Agent):

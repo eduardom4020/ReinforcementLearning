@@ -20,3 +20,12 @@ python pacman.py -p QLearningAgent -k 1 --frameTime 0
 python pacman.py -p QLearningAgent -k 1 -q -N -e 5 -n 100
 python pacman.py -p QLearningAgent -k 1 -q -N -e 50 -n 100
 python pacman.py -p QLearningAgent -k 1 -R
+
+
+em pacman.py, pesquisar:
+
+goto_food_score para acessar o escore de cada comida
+
+goto_score_scared_time
+
+goto_lose
