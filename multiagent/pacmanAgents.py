@@ -15,32 +15,44 @@ import util
 
 #OBS: This is a OFF-POLICY QLarning agent, so it needs to run a training set before play a game
 class QLearningAgent(Agent):
-    #change the value of self.num_features to specify how many feature functions are used, and define the feature in the array
-    def initalizeFeatures(self):
+
+    def actionParse(self,action):
+        if action == 'East': return 0
+        elif action == 'North': return 1
+        elif action == 'West': return 2
+        elif action == 'South': return 3
+        else: return 4
+    
+    def initalize(self):
         self.num_features = 1
+        self.num_actions = 5    #0: right; 1: up; 2: left; 3: down; 4: stop
         self.first_action = True
 
     def getFeaturesCount(self):
         return self.num_features
+
+    def getActionsCount(self):
+        return self.num_actions
 
     def setAgentPolicy(self, state):
         self.agent_policy = state
 	
     def runAgentPolicy(self, Agent):
 	self.setAgentPolicy(True)
-	self.agent = Agent
-		
-    def initializeWeights(self, weights):
-        self.weights = []
-        for w in weights:
-            self.weights.append(w)                        
+	self.agent = Agent                   
 
     def setAlphaAndGama(self, alpha, gama):
         self.alpha = alpha
         self.gama = gama
 
+    def initializeWeights(self, weights):
+        self.weights = weights #0: right_f1; 1: up_f1; 2: left_f1; 3: down_f1; 4: stop_f1; 5: right_f2; 6: up_f2; ...
+
     def getWeights(self):
-        return self.weights                
+        return self.weights
+
+    def findWeight(self,action,feature_num):
+        return self.actionParse(action) + self.num_actions * feature_num
 	
     def getAction(self, gameState):
         if self.first_action:
@@ -49,20 +61,20 @@ class QLearningAgent(Agent):
         
 	if self.agent_policy:            
             action = self.agent.getAction(gameState)
-            self.updateWeights(gameState, action)                         
+            self.updateWeights(gameState, action)
             return action
         else:
             # Collect legal moves and successor states
             legalMoves = gameState.getLegalActions()
 
             # Choose one of the best actions
-            evaluations = [self.Q(gameState, action) for action in legalMoves]
-            bestEvaluation = max(evaluations)
-            bestIndices = [index for index in range(len(evaluations)) if evaluations[index] == bestEvaluation]
-            #print bestIndices
-            chosenIndex = random.choice(bestIndices) # Pick randomly among the best
+            Q = [self.Q(gameState, action) for action in legalMoves]
+            bestQ = max(Q)
+            bestIndices = [index for index in range(len(Q)) if Q[index] == bestQ]
+            chosenIndex = random.choice(bestIndices)
 
-            "Add more of your code here if you want to"
+            if self.alpha > 0:
+                self.updateWeights(gameState, legalMoves[chosenIndex])
 
             return legalMoves[chosenIndex]  
 
@@ -73,8 +85,7 @@ class QLearningAgent(Agent):
         """
         
     def Q(self, gameState, action):
-        #print self.weights[0]
-        return sum( self.feature(gameState, action, feature) * self.weights[feature] for feature in range( self.num_features ) )
+        return sum( self.feature(gameState, action, feature) * self.weights[self.findWeight(action,feature)] for feature in range( self.num_features ) )
 	
     def updateWeights(self, currGameState, action):
         reward = 0
@@ -82,26 +93,32 @@ class QLearningAgent(Agent):
         nextGameState = currGameState.generatePacmanSuccessor(action)
         legalMovesNext = nextGameState.getLegalActions()
 
-        for i, w in enumerate( self.weights ):
-            q_next = [self.Q(nextGameState, action_next) for action_next in legalMovesNext]
-            if len(q_next) == 0:
-                if nextGameState.isLose():
-                    reward = -500
+        q_next = [self.Q(nextGameState, action_next) for action_next in legalMovesNext]
+        if len(q_next) == 0:
+            if nextGameState.isLose():
+                reward = -500
         
-                if nextGameState.isWin():
-                    reward = 1000
+            if nextGameState.isWin():
+                reward = 1000
                     
-                q_next = [self.Q(currGameState, action)]
+            q_next = [self.Q(currGameState, action)]
 
-            self.weights[i] = self.weights[i] + self.alpha * (reward + self.gama * max(q_next) - self.Q(currGameState, action)) * self.feature(currGameState, action, i)
-            #print self.weights[i]
-            #print self.feature(currGameState, action, i)
+        for feature_num in range( self.num_features ):        
+            self.weights[self.findWeight(action,feature_num)] = self.weights[self.findWeight(action,feature_num)] + self.alpha * (reward + self.gama * max(q_next) - self.Q(currGameState, action)) * self.feature(currGameState, action, feature_num)
 
     def feature(self, currGameState, action, feature_num):
         #teacher's sugestion: use only scores value for evaluation. It can permits that the agent adapt itself to many others levels        
         if feature_num == 0:
             return currGameState.getScore() / self.max_score
-	
+
+class RandomAgent(game.Agent):
+    
+    def getAction(self, state):
+        from random import randint
+        
+        legalMoves = state.getLegalActions()
+        rand = randint(0,(len(legalMoves) - 1))
+        return legalMoves[rand]  
 
 class LeftTurnAgent(game.Agent):
   "An agent that turns left at every opportunity"

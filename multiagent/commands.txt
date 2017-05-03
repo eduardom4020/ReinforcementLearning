@@ -18,6 +18,9 @@ python pacman.py -p QLearningAgent -k 1 -N
 python pacman.py -p QLearningAgent -k 1 --frameTime 0
 
 python pacman.py -p QLearningAgent -k 1 -q -N -e 5 -n 100
+python pacman.py -p QLearningAgent -P LeftTurnAgent -k 1 -q -N -e 5 -n 100
+python pacman.py -p QLearningAgent -P RandomAgent -k 1 -q -N -e 5 -n 100
+
 python pacman.py -p QLearningAgent -k 1 -q -N -e 50 -n 100
 python pacman.py -p QLearningAgent -k 1 -R
 

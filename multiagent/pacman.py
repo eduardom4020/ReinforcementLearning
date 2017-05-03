@@ -274,11 +274,11 @@ class ClassicGameRules:
     if state.isLose(): self.lose(state, game)
 
   def win( self, state, game ):
-    if not self.quiet: print "Pacman emerges victorious! Score: %d" % state.data.score
+    #if not self.quiet: print "Pacman emerges victorious! Score: %d" % state.data.score
     game.gameOver = True
 
   def lose( self, state, game ):
-    if not self.quiet: print "Pacman died! Score: %d" % state.data.score
+    #if not self.quiet: print "Pacman died! Score: %d" % state.data.score
     game.gameOver = True
 
   def getProgress(self, game):
@@ -647,24 +647,23 @@ def runGames( layout, pacman, ghosts, display, numGames, numEpochs, agentPolicy,
   games = []
 
   if pacman.__class__.__name__ == 'QLearningAgent':
-    file_name = "weights.pac"
-    
+    file_name = "weights.pac"    
     pacman.setAlphaAndGama(alpha, gama)
     pacman.runAgentPolicy(agentPolicy)
-    pacman.initalizeFeatures()
+    pacman.initalize()
 
     if result == True:
       pacman.setAgentPolicy(False)
       pacman.setAlphaAndGama(0, gama)
 
-    if new == True and os.path.isfile("./" + file_name):
+    if new and os.path.isfile("./" + file_name):
       os.remove(file_name)
 
   for x in range( numEpochs ):
+
+    if x > numEpochs * 1/float(4):
+      pacman.setAgentPolicy(False)
     
-    """if x > 0:
-      pacman.setAgentPolicy(False)"""
-      
     for i in range( numGames ):
       beQuiet = i < numTraining
       if beQuiet:
@@ -683,7 +682,7 @@ def runGames( layout, pacman, ghosts, display, numGames, numEpochs, agentPolicy,
           try:
             file = open(file_name,'rb')
             
-            for w in range( pacman.getFeaturesCount() ):
+            for w in range( pacman.getFeaturesCount() * pacman.getActionsCount() ):
               weight = pickle.load(file)
               feature_weights.append(weight)
               
@@ -692,7 +691,7 @@ def runGames( layout, pacman, ghosts, display, numGames, numEpochs, agentPolicy,
             
           except (OSError, IOError) as e:
           #initialize file if it doesn't exists
-            for w in range( pacman.getFeaturesCount() ):
+            for w in range( pacman.getFeaturesCount() * pacman.getActionsCount() ):
               weight = 1
               feature_weights.append(weight)
                   
@@ -706,7 +705,6 @@ def runGames( layout, pacman, ghosts, display, numGames, numEpochs, agentPolicy,
       if pacman.__class__.__name__ == 'QLearningAgent': 
         file = open(file_name,"wb")
         
-        print pacman.getWeights()
         for w in pacman.getWeights():
           pickle.dump(w, file)
           
