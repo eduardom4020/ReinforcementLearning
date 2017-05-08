@@ -24,7 +24,7 @@ class QLearningAgent(Agent):
         else: return 4
     
     def initalize(self):
-        self.num_features = 1
+        self.num_features = 3   
         self.num_actions = 5    #0: right; 1: up; 2: left; 3: down; 4: stop
         self.first_action = True
 
@@ -111,7 +111,9 @@ class QLearningAgent(Agent):
         #if feature_num == 0:
             #return currGameState.getScore() / self.max_score
         
-        if feature_num == 0:
+        #raycast features 
+        element = self.raycastPos(currGameState, action, feature_num)
+        return self.elementValue(element)/self.maxElementValue()
 
     #shoots a ray in the direction of the action, catching targets in distance
     def raycast(self, currGameState, action, distance):
@@ -133,17 +135,34 @@ class QLearningAgent(Agent):
 
         return result_set
 
-    def elementValue(self, element)
-        if element == ' ':
-            return 1                                         
-        elif element == '.':
-            return 5
-        elif element == '%':
-            return -5
-        elif element == 'G':
-            return -10
-        elif element == 'o':
-            return 20
+    def raycastPos(self, currGameState, action, pos):
+        p0 = currGameState.getPacmanPosition()
+        x,y = p0
+
+        if action == 'East':
+            if x > 0: x -= pos                
+        elif action == 'North':
+            if y > 0: y -= pos                
+        elif action == 'West':
+            if x < len(currGameState[x]) - 1: x += pos
+        elif action == 'South':
+            if y < len(currGameState[y]) - 1: y += pos 
+        else: return 'p'
+
+        print str(x) +' '+ str(y)
+
+        return currGameState[x][y]
+
+    def elementValue(self, element):
+        if element == ' ': return 1                                         
+        elif element == '.': return 5
+        elif element == '%': return -5
+        elif element == 'G': return -10
+        elif element == 'o': return 20
+        else: return 0
+
+    def maxElementValue(self):
+        return 20
                 
 
 class RandomAgent(game.Agent):
