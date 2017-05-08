@@ -59,7 +59,7 @@ class QLearningAgent(Agent):
             self.max_score = gameState.getNumFood() * 10.0
             self.first_action = False
         
-	if self.agent_policy:            
+	if self.agent_policy:
             action = self.agent.getAction(gameState)
             self.updateWeights(gameState, action)
             return action
@@ -107,9 +107,30 @@ class QLearningAgent(Agent):
             self.weights[self.findWeight(action,feature_num)] = self.weights[self.findWeight(action,feature_num)] + self.alpha * (reward + self.gama * max(q_next) - self.Q(currGameState, action)) * self.feature(currGameState, action, feature_num)
 
     def feature(self, currGameState, action, feature_num):
-        #teacher's sugestion: use only scores value for evaluation. It can permits that the agent adapt itself to many others levels        
+        #teacher's sugestion: use only scores value for evaluation. It can permits that the agent adapt itself to many others levels
         if feature_num == 0:
             return currGameState.getScore() / self.max_score
+        #elif feature_num == 1:
+
+    #shoots a ray in the direction of the action, catching targets in distance
+    def raycast(self, currGameState, action, distance):
+        p0 = currGameState.getPacmanPosition()
+        x,y = p0
+        result_set = []
+        for next_pos in range(distance):
+            if action == 'East':
+                if x > 0: x -= 1                                              
+            elif action == 'North':
+                if y > 0: y -= 1 
+            elif action == 'West':
+                if x < len(currGameState[x]) - 1: x += 1 
+            elif action == 'South':
+                if y < len(currGameState[y]) - 1: y += 1 
+            else: return 0
+            
+            result_set = [currGameState[x][y]] + result_set
+
+        return result_set
 
 class RandomAgent(game.Agent):
     

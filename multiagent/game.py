@@ -417,7 +417,7 @@ class GameStateData:
         #hash(state)
     return int((hash(tuple(self.agentStates)) + 13*hash(self.food) + 113* hash(tuple(self.capsules)) + 7 * hash(self.score)) % 1048575 )
 
-  def __str__( self ):
+  def getMap( self ):
     width, height = self.layout.width, self.layout.height
     map = Grid(width, height)
     if type(self.food) == type((1,2)):
@@ -440,7 +440,10 @@ class GameStateData:
     for x, y in self.capsules:
       map[x][y] = 'o'
 
-    return str(map) + ("\nScore: %d\n" % self.score)
+    return map
+
+  def __str__( self ):
+    return str(self.getMap()) + ("\nScore: %d\n" % self.score)
 
   def _foodWallStr( self, hasFood, hasWall ):
     if hasFood:

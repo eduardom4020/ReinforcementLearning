@@ -232,6 +232,23 @@ class GameState:
 
     return str(self.data)
 
+  def __getitem__ (self, x_pos, y_pos=None):
+    grid = self.data.getMap()
+    
+    if y_pos is None:
+      row = []
+      for y, col in enumerate(grid):
+        for x, element in enumerate(col):
+          if x == x_pos:
+            row = [element] + row
+      return row
+    
+    else:      
+      row = self.__getitem__(x_pos)
+      for y, element in enumerate(row):
+          if y == y_pos:
+            return element
+
   def initialize( self, layout, numGhostAgents=1000 ):
     """
     Creates an initial game state from a layout array (see layout.py).
