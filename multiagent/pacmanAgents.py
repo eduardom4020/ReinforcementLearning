@@ -108,9 +108,10 @@ class QLearningAgent(Agent):
 
     def feature(self, currGameState, action, feature_num):
         #teacher's sugestion: use only scores value for evaluation. It can permits that the agent adapt itself to many others levels
+        #if feature_num == 0:
+            #return currGameState.getScore() / self.max_score
+        
         if feature_num == 0:
-            return currGameState.getScore() / self.max_score
-        #elif feature_num == 1:
 
     #shoots a ray in the direction of the action, catching targets in distance
     def raycast(self, currGameState, action, distance):
@@ -131,6 +132,19 @@ class QLearningAgent(Agent):
             result_set = [currGameState[x][y]] + result_set
 
         return result_set
+
+    def elementValue(self, element)
+        if element == ' ':
+            return 1                                         
+        elif element == '.':
+            return 5
+        elif element == '%':
+            return -5
+        elif element == 'G':
+            return -10
+        elif element == 'o':
+            return 20
+                
 
 class RandomAgent(game.Agent):
     
