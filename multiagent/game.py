@@ -442,6 +442,12 @@ class GameStateData:
 
     return map
 
+  def getWidth(self):
+    return self.layout.width
+
+  def getHeight(self):
+    return self.layout.height
+
   def __str__( self ):
     return str(self.getMap()) + ("\nScore: %d\n" % self.score)
 

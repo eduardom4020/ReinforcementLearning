@@ -24,7 +24,7 @@ class QLearningAgent(Agent):
         else: return 4
     
     def initalize(self):
-        self.num_features = 3   
+        self.num_features = 4 #feature0: scores; features 1-3: raycast   
         self.num_actions = 5    #0: right; 1: up; 2: left; 3: down; 4: stop
         self.first_action = True
 
@@ -108,12 +108,13 @@ class QLearningAgent(Agent):
 
     def feature(self, currGameState, action, feature_num):
         #teacher's sugestion: use only scores value for evaluation. It can permits that the agent adapt itself to many others levels
-        #if feature_num == 0:
-            #return currGameState.getScore() / self.max_score
+        if feature_num == 0:
+            return currGameState.getScore() / self.max_score
         
-        #raycast features 
-        element = self.raycastPos(currGameState, action, feature_num)
-        return self.elementValue(element)/self.maxElementValue()
+        #raycast features
+        if feature_num > 0:
+            element = self.raycastPos(currGameState, action, feature_num)
+            return self.elementValue(element)/self.maxElementValue()
     
     #OBS: in the two methods bellow, x indicate the row position (top to botton) and y the collum position(left to right)
 
@@ -124,40 +125,30 @@ class QLearningAgent(Agent):
         result_set = []
         for next_pos in range(distance):
             if action == 'East':
-                if x > 0: x -= 1                                              
+                if y < currGameState.getWidth() - 1: y += 1
             elif action == 'North':
-                if y > 0: y -= 1 
+                if x < currGameState.getHeight() - 1: x += 1
             elif action == 'West':
-                if x < len(currGameState[x]) - 1: x += 1 
+                if y > 0: y -= 1 
             elif action == 'South':
-                if y < len(currGameState[y]) - 1: y += 1 
-            else: return 0
-            
+                if x > 0: x -= 1 
+
             result_set = [currGameState[x][y]] + result_set
 
         return result_set
 
     def raycastPos(self, currGameState, action, pos):
-        p0 = currGameState.getPacmanPosition()
-        y,x = p0
+        result = self.raycast(currGameState, action, self.num_features)
+        #print result
 
-        if action == 'East': #decrease y
-            if y - pos >= 0: y -= pos                
-        elif action == 'North': #increase x
-            if x + pos <= len(currGameState[x]) - 1: x += pos                
-        elif action == 'West': #increase y
-            if y + pos <= len(currGameState[y]) - 1: y += pos 
-        elif action == 'South': #decrease x
-            if x - pos >= 0: x -= pos            
-        else: return 'n'
-
-        #print str(x) +' '+ str(y)
-
-        return currGameState[x][y]
+        if pos >= len(result): 
+            return 'n'
+        else:
+            return result[pos]
 
     def elementValue(self, element):
         if element == ' ': return 1                                         
-        elif element == '.': return 4
+        elif element == '.': return 5
         elif element == '%': return -5
         elif element == 'G': return -10
         elif element == 'o': return 20

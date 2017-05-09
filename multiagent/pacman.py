@@ -197,6 +197,12 @@ class GameState:
   def isWin( self ):
     return self.data._win
 
+  def getWidth(self):
+    return self.data.layout.width
+
+  def getHeight(self):
+    return self.data.layout.height
+
   #############################################
   #             Helper methods:               #
   # You shouldn't need to call these directly #
@@ -240,7 +246,7 @@ class GameState:
       for y, col in enumerate(grid):
         for x, element in enumerate(col):
           if x == x_pos:
-            row = [element] + row
+            row = row + [element]
       return row
     
     else:      
