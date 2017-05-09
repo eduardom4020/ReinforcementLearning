@@ -114,11 +114,13 @@ class QLearningAgent(Agent):
         #raycast features 
         element = self.raycastPos(currGameState, action, feature_num)
         return self.elementValue(element)/self.maxElementValue()
+    
+    #OBS: in the two methods bellow, x indicate the row position (top to botton) and y the collum position(left to right)
 
     #shoots a ray in the direction of the action, catching targets in distance
     def raycast(self, currGameState, action, distance):
         p0 = currGameState.getPacmanPosition()
-        x,y = p0
+        y,x = p0
         result_set = []
         for next_pos in range(distance):
             if action == 'East':
@@ -137,25 +139,25 @@ class QLearningAgent(Agent):
 
     def raycastPos(self, currGameState, action, pos):
         p0 = currGameState.getPacmanPosition()
-        x,y = p0
+        y,x = p0
 
-        if action == 'East':
-            if x > 0: x -= pos                
-        elif action == 'North':
-            if y > 0: y -= pos                
-        elif action == 'West':
-            if x < len(currGameState[x]) - 1: x += pos
-        elif action == 'South':
-            if y < len(currGameState[y]) - 1: y += pos 
-        else: return 'p'
+        if action == 'East': #decrease y
+            if y - pos >= 0: y -= pos                
+        elif action == 'North': #increase x
+            if x + pos <= len(currGameState[x]) - 1: x += pos                
+        elif action == 'West': #increase y
+            if y + pos <= len(currGameState[y]) - 1: y += pos 
+        elif action == 'South': #decrease x
+            if x - pos >= 0: x -= pos            
+        else: return 'n'
 
-        print str(x) +' '+ str(y)
+        #print str(x) +' '+ str(y)
 
         return currGameState[x][y]
 
     def elementValue(self, element):
         if element == ' ': return 1                                         
-        elif element == '.': return 5
+        elif element == '.': return 4
         elif element == '%': return -5
         elif element == 'G': return -10
         elif element == 'o': return 20

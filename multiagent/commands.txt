@@ -15,6 +15,7 @@ python pacman.py -l smallClassic -p ExpectimaxAgent -a evalFn=better -q -n 10
 python pacman.py -l contestClassic -p ContestAgent -g DirectionalGhost -q -n 10
 
 python pacman.py -p QLearningAgent -k 1 -N
+python pacman.py -p QLearningAgent -P KeyboardAgent -k 1 -N
 python pacman.py -p QLearningAgent -k 1 --frameTime 0
 
 python pacman.py -p QLearningAgent -k 1 -q -N -e 5 -n 100

@@ -39,7 +39,7 @@ from game import Directions
 from game import Actions
 from util import nearestPoint
 from util import manhattanDistance
-#import pacmanAgents
+import pacmanAgents
 import util, layout
 import sys, types, time, random, os
 import cPickle as pickle
@@ -677,10 +677,8 @@ def runGames( layout, pacman, ghosts, display, numGames, numEpochs, agentPolicy,
       os.remove(file_name)
 
   for x in range( numEpochs ):
-
-    if x > numEpochs * 1/float(4):
-      pacman.setAgentPolicy(False)
-    
+    #if x > numEpochs * 1/float(4):
+      #pacman.setAgentPolicy(False)    
     for i in range( numGames ):
       beQuiet = i < numTraining
       if beQuiet:
