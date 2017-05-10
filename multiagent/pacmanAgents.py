@@ -131,7 +131,18 @@ class QLearningAgent(Agent):
             elif action == 'West':
                 if y > 0: y -= 1 
             elif action == 'South':
-                if x > 0: x -= 1 
+                if x > 0: x -= 1
+            else:
+                direction = currGameState.getPacmanState().getDirection()
+
+                if action == 'East':
+                    if y < currGameState.getWidth() - 1: y += 1
+                elif action == 'North':
+                    if x < currGameState.getHeight() - 1: x += 1
+                elif action == 'West':
+                    if y > 0: y -= 1 
+                elif action == 'South':
+                    if x > 0: x -= 1
 
             result_set = [currGameState[x][y]] + result_set
 
@@ -139,7 +150,6 @@ class QLearningAgent(Agent):
 
     def raycastPos(self, currGameState, action, pos):
         result = self.raycast(currGameState, action, self.num_features)
-        #print result
 
         if pos >= len(result): 
             return 'n'
