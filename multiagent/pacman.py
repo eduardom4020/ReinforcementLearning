@@ -682,9 +682,10 @@ def runGames( layout, pacman, ghosts, display, numGames, numEpochs, agentPolicy,
     if new and os.path.isfile("./" + file_name):
       os.remove(file_name)
 
-  for x in range( numEpochs ):
-    #if x > numEpochs * 1/float(4):
-      #pacman.setAgentPolicy(False)    
+  if agentPolicy == 'False':
+    pacman.setAgentPolicy(False) 
+
+  for x in range( numEpochs ):  
     for i in range( numGames ):
       beQuiet = i < numTraining
       if beQuiet:
@@ -713,7 +714,7 @@ def runGames( layout, pacman, ghosts, display, numGames, numEpochs, agentPolicy,
           except (OSError, IOError) as e:
           #initialize file if it doesn't exists
             for w in range( pacman.getFeaturesCount() * pacman.getActionsCount() ):
-              weight = 1
+              weight = 0
               feature_weights.append(weight)
                   
 

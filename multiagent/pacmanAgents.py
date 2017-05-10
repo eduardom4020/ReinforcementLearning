@@ -24,7 +24,7 @@ class QLearningAgent(Agent):
         else: return 4
     
     def initalize(self):
-        self.num_features = 4 #feature0: scores; features 1-3: raycast   
+        self.num_features = 3 #feature0: scores; features 1: food_distance; feature 2: ghost_distance
         self.num_actions = 5    #0: right; 1: up; 2: left; 3: down; 4: stop
         self.first_action = True
 
@@ -57,6 +57,11 @@ class QLearningAgent(Agent):
     def getAction(self, gameState):
         if self.first_action:
             self.max_score = gameState.getNumFood() * 10.0
+            
+            self.corner1 = [0,0]
+            self.corner2 = [gameState.getHeight()-1,gameState.getWidth()-1]
+            self.maxDistance = util.manhattanDistance(self.corner1, self.corner2)
+            
             self.first_action = False
         
 	if self.agent_policy:
@@ -107,14 +112,56 @@ class QLearningAgent(Agent):
             self.weights[self.findWeight(action,feature_num)] = self.weights[self.findWeight(action,feature_num)] + self.alpha * (reward + self.gama * max(q_next) - self.Q(currGameState, action)) * self.feature(currGameState, action, feature_num)
 
     def feature(self, currGameState, action, feature_num):
-        #teacher's sugestion: use only scores value for evaluation. It can permits that the agent adapt itself to many others levels
         if feature_num == 0:
             return currGameState.getScore() / self.max_score
         
-        #raycast features
-        if feature_num > 0:
+        elif feature_num == 1:
+            actualFood = currGameState.getFood()
+            position = currGameState.getPacmanPosition()
+
+            min_food_distance = 999999
+
+            for x, food_row in enumerate(actualFood):
+              for y, food in enumerate(food_row):
+                if food == True:
+                  food_pos = [x, y]
+                  distance = util.manhattanDistance(position, food_pos)
+                  if distance < min_food_distance:
+                    min_food_distance = distance
+
+            return 1 - min_food_distance / self.maxDistance
+
+        elif feature_num == 2:
+            ghostStates = currGameState.getGhostStates()
+            position = currGameState.getPacmanPosition()
+            
+            min_ghost_distance = 999999
+
+            for ghost in ghostStates:
+                distance = util.manhattanDistance(position, ghost.getPosition())
+                if distance < min_ghost_distance:
+                  min_ghost_distance = distance
+
+            return 1 - min_ghost_distance / self.maxDistance
+
+        """elif feature_num == 3:
+            walls = currGameState.getWalls()
+            position = currGameState.getPacmanPosition()
+
+            max_wall_distance = -1
+
+            for x, wall_row in enumerate(walls):
+              for y, wall in enumerate(wall_row):
+                if wall == True:
+                  wall_pos = [x, y]
+                  distance = Space.distance(position, wall_pos)
+                  if distance > max_wall_distance:
+                    max_wall_distance = distance"""
+                                
+        #raycast features (desn't work)
+        """if feature_num > 0:
             element = self.raycastPos(currGameState, action, feature_num)
-            return self.elementValue(element)/self.maxElementValue()
+            return self.elementValue(element)/self.maxElementValue()"""
     
     #OBS: in the two methods bellow, x indicate the row position (top to botton) and y the collum position(left to right)
 
