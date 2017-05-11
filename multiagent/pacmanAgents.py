@@ -97,8 +97,11 @@ class QLearningAgent(Agent):
 
         nextGameState = currGameState.generatePacmanSuccessor(action)
         legalMovesNext = nextGameState.getLegalActions()
-
         q_next = [self.Q(nextGameState, action_next) for action_next in legalMovesNext]
+
+        """actualActions = currGameState.getLegalActions()
+        possible_next_states"""
+        
         if len(q_next) == 0:
             if nextGameState.isLose():
                 reward = -500
@@ -108,14 +111,17 @@ class QLearningAgent(Agent):
                     
             q_next = [self.Q(currGameState, action)]
 
+        #print max(q_next)
+
         for feature_num in range( self.num_features ):        
-            self.weights[self.findWeight(action,feature_num)] = self.weights[self.findWeight(action,feature_num)] + self.alpha * (reward + self.gama * max(q_next) - self.Q(currGameState, action)) * self.feature(currGameState, action, feature_num)
+            self.weights[self.findWeight(action,feature_num)] = self.weights[self.findWeight(action,feature_num)] + self.alpha * (reward + self.gama * max(q_next)) - self.Q(currGameState, action) * self.feature(currGameState, action, feature_num)
 
     def feature(self, currGameState, action, feature_num):
-        if feature_num == 0:
-            return currGameState.getScore() / self.max_score
+        """if feature_num == 0:
+            return currGameState.getScore() / self.max_score"""
         
-        elif feature_num == 1:
+        """#elif feature_num == 1:
+        if feature_num == 0:
             actualFood = currGameState.getFood()
             position = currGameState.getPacmanPosition()
 
@@ -129,9 +135,11 @@ class QLearningAgent(Agent):
                   if distance < min_food_distance:
                     min_food_distance = distance
 
-            return 1 - min_food_distance / self.maxDistance
+            #return 1 - min_food_distance / self.maxDistance
+            return min_food_distance / self.maxDistance
 
-        elif feature_num == 2:
+        #elif feature_num == 2:
+        elif feature_num == 1:
             ghostStates = currGameState.getGhostStates()
             position = currGameState.getPacmanPosition()
             
@@ -142,26 +150,13 @@ class QLearningAgent(Agent):
                 if distance < min_ghost_distance:
                   min_ghost_distance = distance
 
-            return 1 - min_ghost_distance / self.maxDistance
-
-        """elif feature_num == 3:
-            walls = currGameState.getWalls()
-            position = currGameState.getPacmanPosition()
-
-            max_wall_distance = -1
-
-            for x, wall_row in enumerate(walls):
-              for y, wall in enumerate(wall_row):
-                if wall == True:
-                  wall_pos = [x, y]
-                  distance = Space.distance(position, wall_pos)
-                  if distance > max_wall_distance:
-                    max_wall_distance = distance"""
+            #return 1 - min_ghost_distance / self.maxDistance
+            return min_ghost_distance / self.maxDistance"""
                                 
         #raycast features (desn't work)
-        """if feature_num > 0:
+        if feature_num >= 0:
             element = self.raycastPos(currGameState, action, feature_num)
-            return self.elementValue(element)/self.maxElementValue()"""
+            return self.elementValue(element)/self.maxElementValue()
     
     #OBS: in the two methods bellow, x indicate the row position (top to botton) and y the collum position(left to right)
 
