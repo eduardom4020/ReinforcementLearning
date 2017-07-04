@@ -51,8 +51,8 @@ rows =		22
 maxfps = 	30
 play_game = False;
 
+#agent view
 agent_view_cell_size = 1
-
 
 colors = [
 (0,   0,   0  ),
@@ -126,7 +126,7 @@ class TetrisApp(object):
 	def __init__(self):
 		pygame.init()
 		pygame.key.set_repeat(250,25)
-		self.width = cell_size*(cols+6)
+		self.width = cell_size*(cols+5)
 		self.height = cell_size*rows
 		self.rlim = cell_size*cols
 		self.bground_grid = [[ 8 if x%2==y%2 else 0 for x in xrange(cols)] for y in xrange(rows)]
@@ -278,6 +278,9 @@ class TetrisApp(object):
 
 	################# LEARNING AND RUNNING #################################################
 
+	def agentViewMatrix(self):
+                #return pygame.surfarray.array2d(pygame.Surface())
+
 	def initializeAgent(self):
 		session = tf.Session()
 
@@ -289,19 +292,19 @@ class TetrisApp(object):
 
 	def _qvalues(observ):
 		with tf.variable_scope('qvalues', reuse=True):
-
+        
 			# Network from DQN (Mnih 2015)
 			h1 = tf.layers.conv2d(observ, 32, 8, 4, tf.nn.relu)
 			h2 = tf.layers.conv2d(h1, 64, 4, 2, tf.nn.relu)
 			h3 = tf.layers.conv2d(h2, 64, 3, 1, tf.nn.relu)
 			h4 = tf.layers.dense(h3, 512, tf.nn.relu)
-
+        
 			return tf.layers.dense(h4, num_actions, None)
 
-	current = tf.gather(_qvalues(observ), action)[:, 0]
-	target = reward + gamma * tf.reduce_max(_qvalues(nextob), 1)
-	target = tf.where(done, tf.zeros_like(target), target)
-	loss = (current - target) ** 2
+	#current = tf.gather(_qvalues(observ), action)[:, 0]
+	#target = reward + gamma * tf.reduce_max(_qvalues(nextob), 1)
+	#target = tf.where(done, tf.zeros_like(target), target)
+	#loss = (current - target) ** 2
 
 	def run(self):
 		key_actions = {
@@ -341,22 +344,22 @@ class TetrisApp(object):
 				if self.paused:
 					self.center_msg("Paused")
 				else:
-					pygame.draw.line(self.screen,
-						(255,255,255),
-						(self.rlim+1, 0),
-						(self.rlim+1, self.height-1))
-					self.disp_msg("Next:", (
-						self.rlim+cell_size,
-						2))
-					self.disp_msg("Score: %d\n\nLevel: %d\
-\nLines: %d" % (self.score, self.level, self.lines),
-						(self.rlim+cell_size, cell_size*5))
-					self.draw_matrix(self.bground_grid, (0,0))
+					#pygame.draw.line(self.screen,
+						#(255,255,255),
+						#(self.rlim+1, 0),
+						#(self.rlim+1, self.height-1))
+					#self.disp_msg("Next:", (
+						#self.rlim+cell_size,
+						#2))
+					#self.disp_msg("Score: %d\n\nLevel: %d\
+#\nLines: %d" % (self.score, self.level, self.lines),
+						#(self.rlim+cell_size, cell_size*5))
+					#self.draw_matrix(self.bground_grid, (0,0))
 					self.draw_matrix(self.board, (0,0))
 					self.draw_matrix(self.stone,
 						(self.stone_x, self.stone_y))
 					self.draw_matrix(self.next_stone,
-						(cols+1,2))
+						(cols+1,0))
 			pygame.display.update()
 			
 			for event in pygame.event.get():
@@ -371,15 +374,15 @@ class TetrisApp(object):
 							key_actions[key]()
 
 			#agent
-			result = False
-
 			#random agent moves
 
-			while (not result):
-				for key in agent_key_actions:
-					if(randint(0,1) == 1):
-						agent_key_actions[key]()
-						result = True
+                        if(not play_game):
+                                for key in agent_key_actions:
+                                        if(randint(0, 99) < 15):
+                                                agent_key_actions[key]()
+
+                                for row in self.agentViewMatrix():
+                                        print(row)
 					
 			dont_burn_my_cpu.tick(maxfps)
 
