@@ -40,13 +40,19 @@
 # THE SOFTWARE.
 
 from random import randrange as rand
+from random import randint
 import pygame, sys
+import tensorflow as tf
 
 # The configuration
 cell_size =	18
 cols =		10
 rows =		22
 maxfps = 	30
+play_game = False;
+
+agent_view_cell_size = 1
+
 
 colors = [
 (0,   0,   0  ),
@@ -268,7 +274,35 @@ class TetrisApp(object):
 		if self.gameover:
 			self.init_game()
 			self.gameover = False
-	
+
+
+	################# LEARNING AND RUNNING #################################################
+
+	def initializeAgent(self):
+		session = tf.Session()
+
+		NUM_STATES = cols * rows
+		NUM_ACTIONS = 5
+
+		state = tf.placeholder("float", [None, NUM_STATES])
+		targets = tf.placeholder("float", [None, NUM_ACTIONS])
+
+	def _qvalues(observ):
+		with tf.variable_scope('qvalues', reuse=True):
+
+			# Network from DQN (Mnih 2015)
+			h1 = tf.layers.conv2d(observ, 32, 8, 4, tf.nn.relu)
+			h2 = tf.layers.conv2d(h1, 64, 4, 2, tf.nn.relu)
+			h3 = tf.layers.conv2d(h2, 64, 3, 1, tf.nn.relu)
+			h4 = tf.layers.dense(h3, 512, tf.nn.relu)
+
+			return tf.layers.dense(h4, num_actions, None)
+
+	current = tf.gather(_qvalues(observ), action)[:, 0]
+	target = reward + gamma * tf.reduce_max(_qvalues(nextob), 1)
+	target = tf.where(done, tf.zeros_like(target), target)
+	loss = (current - target) ** 2
+
 	def run(self):
 		key_actions = {
 			'ESCAPE':	self.quit,
@@ -280,6 +314,14 @@ class TetrisApp(object):
 			'SPACE':	self.start_game,
 			'RETURN':	self.insta_drop
 		}
+
+		agent_key_actions = {
+			'LEFT':		lambda:self.move(-1),
+			'RIGHT':	lambda:self.move(+1),
+			'DOWN':		lambda:self.drop(True),
+			'UP':		self.rotate_stone,
+			'RETURN':	self.insta_drop
+		}
 		
 		self.gameover = False
 		self.paused = False
@@ -288,8 +330,13 @@ class TetrisApp(object):
 		while 1:
 			self.screen.fill((0,0,0))
 			if self.gameover:
-				self.center_msg("""Game Over!\nYour score: %d
-Press space to continue""" % self.score)
+				if(play_game):
+					self.center_msg("""Game Over!\nYour score: %dPress space to continue""" % self.score)
+
+				#end of episode here
+				else:
+					self.start_game()
+				####################################################
 			else:
 				if self.paused:
 					self.center_msg("Paused")
@@ -317,11 +364,22 @@ Press space to continue""" % self.score)
 					self.drop(False)
 				elif event.type == pygame.QUIT:
 					self.quit()
-				elif event.type == pygame.KEYDOWN:
+				elif event.type == pygame.KEYDOWN and play_game:
 					for key in key_actions:
 						if event.key == eval("pygame.K_"
 						+key):
 							key_actions[key]()
+
+			#agent
+			result = False
+
+			#random agent moves
+
+			while (not result):
+				for key in agent_key_actions:
+					if(randint(0,1) == 1):
+						agent_key_actions[key]()
+						result = True
 					
 			dont_burn_my_cpu.tick(maxfps)
 
