@@ -59,8 +59,6 @@ maxfps = 	30
 play_game = False;
 train = True;
 
-#agent view
-agent_view_cell_size = 1
 
 colors = [
 (0,   0,   0  ),
@@ -312,6 +310,8 @@ class TetrisApp(object):
 
 		EPOCHS = 100
 
+		GAMA = 0.99
+
 
 
 
@@ -329,77 +329,26 @@ class TetrisApp(object):
 
 		self.session = tf.Session()
 		self.epochs = EPOCHS
+		self.gama = GAMA
 
+	def exploration_rate(self, epoch):
+		start_eps = 1.0
+		end_eps = 0.1
+		const_eps_epochs = 0.1 * self.epochs
+		eps_decay_epochs = 0.6 * self.epochs
 
-	def create_network(self):
-		    # Add 2 convolutional layers with ReLu activation
-		    conv1 = tf.contrib.layers.convolution2d(self.state, num_outputs=self.features_layer_1, kernel_size=[self.conv_width, self.conv_height], stride=[2, 5],
-		                                            activation_fn=tf.nn.relu,
-		                                            weights_initializer=tf.contrib.layers.xavier_initializer_conv2d(),
-		                                            biases_initializer=tf.constant_initializer(0.1))
-		    conv2 = tf.contrib.layers.convolution2d(conv1, num_outputs=self.features_layer_2, kernel_size=[self.conv_width, self.conv_height], stride=[2, 5],
-		                                            activation_fn=tf.nn.relu,
-		                                            weights_initializer=tf.contrib.layers.xavier_initializer_conv2d(),
-		                                            biases_initializer=tf.constant_initializer(0.1))
-
-		    #final layer, between actions and the net
-		    conv2_flat = tf.contrib.layers.flatten(conv2)
-
-		    fc1 = tf.contrib.layers.fully_connected(conv2_flat, num_outputs=self.network_outputs, activation_fn=tf.nn.relu,
-		                                            weights_initializer=tf.contrib.layers.xavier_initializer(),
-		                                            biases_initializer=tf.constant_initializer(0.1))
-
-		    is_in_training = tf.placeholder(tf.bool)
-		    fc1_drop = tf.contrib.layers.dropout(fc1, keep_prob=0.7, is_training=is_in_training)
-
-		    q = tf.contrib.layers.fully_connected(fc1_drop, num_outputs=self.num_actions, activation_fn=None,
-		                                          weights_initializer=tf.contrib.layers.xavier_initializer(),
-		                                          biases_initializer=tf.constant_initializer(0.1))
-		    best_a = tf.argmax(q, 1)
-
-		    loss = tf.losses.mean_squared_error(q, self.targets)
-
-		    optimizer = tf.train.RMSPropOptimizer(self.learning_rate)
-		    # Update the parameters according to the computed gradient using RMSProp.
-		    train_step = optimizer.minimize(loss)
-
-		    def function_learn(s1, target_q, is_training):
-		        feed_dict = {self.state: s1, self.targets: target_q, is_in_training: is_training}
-		        l, _ = self.session.run([loss, train_step], feed_dict=feed_dict)
-		        return l
-
-		    def function_get_q_values(state, is_training):
-		        return self.session.run(q, feed_dict={self.state: state, is_in_training: is_training})
-
-		    def function_simple_get_q_values(state, is_training):
-		        return function_get_q_values(state.reshape([1, cols, rows, 1]), is_training)[0]
-
-		    def function_get_best_action(state, is_training):
-		        return self.session.run(best_a, feed_dict={self.state: state, is_in_training: is_training})
-
-		    def function_simple_get_best_action(state, is_training):
-		    	return function_get_best_action(state.reshape([1, cols, rows, 1]), is_training)[0]
-		    
-		    return function_learn, function_get_q_values, function_simple_get_best_action, function_simple_get_q_values
-
-    def exploration_rate(epoch):
-	    start_eps = 1.0
-	    end_eps = 0.1
-	    const_eps_epochs = 0.1 * self.epochs
-	    eps_decay_epochs = 0.6 * self.epochs
-
-	    if load_model:
-	        return end_eps
-	    else:
-	        if epoch < const_eps_epochs:
-	            return start_eps
-	        elif epoch < eps_decay_epochs:
-	            return start_eps - (epoch - const_eps_epochs) / \
-	                               (eps_decay_epochs - const_eps_epochs) * (start_eps - end_eps)
-	        else:
-	            return end_eps
+		if load_model:
+			return end_eps
+		else:
+			if epoch < const_eps_epochs:
+				return start_eps
+			elif epoch < eps_decay_epochs:
+				return start_eps - (epoch - const_eps_epochs) / \
+					(eps_decay_epochs - const_eps_epochs) * (start_eps - end_eps)
+			else:
+				return end_eps
                 
-	def perform_learning_step(eps):
+	def perform_learning_step(self, eps, agent_key_actions, get_q_values, learn):
 	    
 	    s1 = self.agentViewMatrix()
 
@@ -409,25 +358,19 @@ class TetrisApp(object):
 	    else:
 	        a = get_best_action(s1, True)
 	        
-	    #TODO: make the learning step algorithm
+	    #learning step algorithm
+	    self.last_score = self.score
+	    agent_key_actions[a]()
+	    reward = self.last_score - self.score
 
-	    reward = 
-	    
-	    isterminal = game.is_episode_finished()
-	    s2 = preprocess(game.get_state().screen_buffer) if not isterminal else None
+	    s2 = self.agentViewMatrix()
 
-	    memory.add_transition(s1, a, s2, isterminal, reward)
+	    q2 = np.max(q_values(s2, True), axis=1)
+        target_q = q_values(s1, True)
 
-	    if memory.size > batch_size:
-	        s1, a, s2, isterminal, r = memory.get_sample(batch_size)
+        target_q[np.arange(target_q.shape[0]), a] = reward + self.gama * q2
 
-	        q2 = np.max(get_q_values(s2, True), axis=1)
-	        target_q = get_q_values(s1, True)
-
-	        target_q[np.arange(target_q.shape[0]), a] = r + discount_factor * (1-isterminal) * q2
-
-	        learn(s1, target_q, True)
-
+        learn(s1, target_q, True)
 	        
 	def sim_perform_step(eps):
 	    
@@ -438,12 +381,64 @@ class TetrisApp(object):
 	        s1 = preprocess(game.get_state().screen_buffer)
 	        # is not random, action without dropout, action with dropout
 	        return 0, get_best_action(s1, False), get_best_action(s1, True)
+
+	def create_network():
+	    # Add 2 convolutional layers with ReLu activation
+	    conv1 = tf.contrib.layers.convolution2d(self.state, num_outputs=self.features_layer_1, kernel_size=[self.conv_width, self.conv_height], stride=[2, 5],
+	                                            activation_fn=tf.nn.relu,
+	                                            weights_initializer=tf.contrib.layers.xavier_initializer_conv2d(),
+	                                            biases_initializer=tf.constant_initializer(0.1))
+	    conv2 = tf.contrib.layers.convolution2d(conv1, num_outputs=self.features_layer_2, kernel_size=[self.conv_width, self.conv_height], stride=[2, 5],
+	                                            activation_fn=tf.nn.relu,
+	                                            weights_initializer=tf.contrib.layers.xavier_initializer_conv2d(),
+	                                            biases_initializer=tf.constant_initializer(0.1))
+
+	    #final layer, between actions and the net
+	    conv2_flat = tf.contrib.layers.flatten(conv2)
+
+	    fc1 = tf.contrib.layers.fully_connected(conv2_flat, num_outputs=self.network_outputs, activation_fn=tf.nn.relu,
+	                                            weights_initializer=tf.contrib.layers.xavier_initializer(),
+	                                            biases_initializer=tf.constant_initializer(0.1))
+
+	    is_in_training = tf.placeholder(tf.bool)
+	    fc1_drop = tf.contrib.layers.dropout(fc1, keep_prob=0.7, is_training=is_in_training)
+
+	    q = tf.contrib.layers.fully_connected(fc1_drop, num_outputs=self.num_actions, activation_fn=None,
+	                                          weights_initializer=tf.contrib.layers.xavier_initializer(),
+	                                          biases_initializer=tf.constant_initializer(0.1))
+	    best_a = tf.argmax(q, 1)
+
+	    loss = tf.losses.mean_squared_error(q, self.targets)
+
+	    optimizer = tf.train.RMSPropOptimizer(self.learning_rate)
+	    # Update the parameters according to the computed gradient using RMSProp.
+	    train_step = optimizer.minimize(loss)
+
+	    def function_learn(s1, target_q, is_training):
+	        feed_dict = {self.state: s1, self.targets: target_q, is_in_training: is_training}
+	        l, _ = self.session.run([loss, train_step], feed_dict=feed_dict)
+	        return l
+
+	    def function_get_q_values(state, is_training):
+	        return self.session.run(q, feed_dict={self.state: state, is_in_training: is_training})
+
+	    def function_simple_get_q_values(state, is_training):
+	        return function_get_q_values(state.reshape([1, cols, rows, 1]), is_training)[0]
+
+	    def function_get_best_action(state, is_training):
+	        return self.session.run(best_a, feed_dict={self.state: state, is_in_training: is_training})
+
+	    def function_simple_get_best_action(state, is_training):
+	    	return function_get_best_action(state.reshape([1, cols, rows, 1]), is_training)[0]
+	    
+	    return function_learn, function_get_q_values, function_simple_get_best_action, function_simple_get_q_values
+
     
 
-    def run(self):
+	def run(self):
 		self.initializeAgent()
 
-		learn, get_q_values, get_best_action, simple_q = self.create_network()
+		learn, q_values, get_best_action, simple_q = create_network()
 		#saver = tf.train.Saver()
 
     	#key_actions = {
@@ -470,7 +465,7 @@ class TetrisApp(object):
 		
 		dont_burn_my_cpu = pygame.time.Clock()
 
-		for epoch in range(self.epochs)
+		for epoch in range(self.epochs):
 			self.screen.fill((0,0,0))
 			if self.gameover:
 				if(not train):
@@ -501,6 +496,10 @@ class TetrisApp(object):
 					self.draw_matrix(self.next_stone,
 						(cols+1,0))
 			pygame.display.update()
+
+
+			last_score = self.score
+
 			
 			for event in pygame.event.get():
 				if event.type == pygame.USEREVENT+1:
@@ -510,7 +509,29 @@ class TetrisApp(object):
 
 			#perform learn step
 			if(train):
-				eps = exploration_rate(epoch)
+				eps = self.exploration_rate(epoch, agent_key_actions)
+				#self.perform_learning_step(eps, agent_key_actions, get_q_values, learn)
+
+				s1 = self.agentViewMatrix()
+
+			#    eps = epsilon_list(epoch)
+				if random() <= eps:
+					a = randint(0, len(self.num_actions) - 1)
+				else:
+					a = get_best_action(s1, True)
+			        
+			    #learning step algorithm
+				agent_key_actions[a]()
+				reward = last_score - self.score
+
+				s2 = self.agentViewMatrix()
+
+				q2 = np.max(q_values(s2, True), axis=1)
+				target_q = q_values(s1, True)
+
+				target_q[np.arange(target_q.shape[0]), a] = reward + self.gama * q2
+
+				learn(s1, target_q, True)
 
 
 				#elif event.type == pygame.KEYDOWN and play_game:
