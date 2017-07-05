@@ -48,6 +48,7 @@ from copy import deepcopy
 from random import randrange as rand
 from random import randint
 from random import random
+import numpy as np
 import pygame, sys
 import tensorflow as tf
 
@@ -58,6 +59,7 @@ rows =		22
 maxfps = 	30
 play_game = False;
 train = True;
+load_file = False
 
 
 colors = [
@@ -125,7 +127,7 @@ def join_matrixes(mat1, mat2, mat2_off):
 def new_board():
 	board = [ [ 0 for x in range(cols) ]
 			for y in range(rows) ]
-	board += [[ 1 for x in range(cols)]]
+	#board += [[ 1 for x in range(cols)]]
 	return board
 
 class TetrisApp(object):
@@ -287,11 +289,19 @@ class TetrisApp(object):
 	def agentViewMatrix(self):
 		result = deepcopy(self.board)
 
+		shape = np.zeros(self.game_resolution, dtype=np.float32)
+
 		for y, row in enumerate(self.stone):
 			for x, square in enumerate(row):
 				result[self.stone_y + y][self.stone_x + x] = square
 
-		return result
+		for y, row in enumerate(result):
+			#print(result)
+			for x, square in enumerate(row):
+				#print(str(x) + ' ' + str(y))
+				shape[y, x] = square
+
+		return [None] + list(shape) + [1]
 
 
 	def initializeAgent(self):
@@ -315,8 +325,8 @@ class TetrisApp(object):
 
 
 
-		game_resolution = (cols, rows)
-		self.state = tf.placeholder(tf.float32, shape= [None] + list(game_resolution) + [1], name='State')
+		self.game_resolution = (rows, cols)
+		self.state = tf.placeholder(tf.float32, shape= [None] + list(self.game_resolution) + [1], name='State')
 		self.targets = tf.placeholder(tf.float32, shape=[None, NUM_ACTIONS], name='TargetQ')
 
 		self.conv_width = CONV_WIDTH
@@ -337,7 +347,7 @@ class TetrisApp(object):
 		const_eps_epochs = 0.1 * self.epochs
 		eps_decay_epochs = 0.6 * self.epochs
 
-		if load_model:
+		if load_file:
 			return end_eps
 		else:
 			if epoch < const_eps_epochs:
@@ -347,32 +357,10 @@ class TetrisApp(object):
 					(eps_decay_epochs - const_eps_epochs) * (start_eps - end_eps)
 			else:
 				return end_eps
-                
-	def perform_learning_step(self, eps, agent_key_actions, get_q_values, learn):
-	    
-	    s1 = self.agentViewMatrix()
+  	
 
-	#    eps = epsilon_list(epoch)
-	    if random() <= eps:
-	        a = randint(0, len(self.num_actions) - 1)
-	    else:
-	        a = get_best_action(s1, True)
 	        
-	    #learning step algorithm
-	    self.last_score = self.score
-	    agent_key_actions[a]()
-	    reward = self.last_score - self.score
-
-	    s2 = self.agentViewMatrix()
-
-	    q2 = np.max(q_values(s2, True), axis=1)
-        target_q = q_values(s1, True)
-
-        target_q[np.arange(target_q.shape[0]), a] = reward + self.gama * q2
-
-        learn(s1, target_q, True)
-	        
-	def sim_perform_step(eps):
+	"""def sim_perform_step(eps):
 	    
 	    if random() <= eps:
 	        # is_random, random_action, -1 (only to complete number of args)
@@ -380,9 +368,9 @@ class TetrisApp(object):
 	    else:
 	        s1 = preprocess(game.get_state().screen_buffer)
 	        # is not random, action without dropout, action with dropout
-	        return 0, get_best_action(s1, False), get_best_action(s1, True)
+	        return 0, get_best_action(s1, False), get_best_action(s1, True)"""
 
-	def create_network():
+	def create_network(self):
 	    # Add 2 convolutional layers with ReLu activation
 	    conv1 = tf.contrib.layers.convolution2d(self.state, num_outputs=self.features_layer_1, kernel_size=[self.conv_width, self.conv_height], stride=[2, 5],
 	                                            activation_fn=tf.nn.relu,
@@ -434,11 +422,12 @@ class TetrisApp(object):
 	    return function_learn, function_get_q_values, function_simple_get_best_action, function_simple_get_q_values
 
     
-
 	def run(self):
 		self.initializeAgent()
 
-		learn, q_values, get_best_action, simple_q = create_network()
+		learn, q_values, get_best_action, simple_q = self.create_network()
+
+		#print(q_values)
 		#saver = tf.train.Saver()
 
     	#key_actions = {
@@ -509,19 +498,25 @@ class TetrisApp(object):
 
 			#perform learn step
 			if(train):
-				eps = self.exploration_rate(epoch, agent_key_actions)
+				eps = self.exploration_rate(epoch)
 				#self.perform_learning_step(eps, agent_key_actions, get_q_values, learn)
 
 				s1 = self.agentViewMatrix()
 
+				print(s1)
+				print(self.state)
+
 			#    eps = epsilon_list(epoch)
 				if random() <= eps:
-					a = randint(0, len(self.num_actions) - 1)
+					a = randint(0, self.num_actions - 1)
 				else:
 					a = get_best_action(s1, True)
 			        
 			    #learning step algorithm
-				agent_key_actions[a]()
+				for x, key in enumerate(agent_key_actions):
+					if(a == x):
+						agent_key_actions[key]()
+
 				reward = last_score - self.score
 
 				s2 = self.agentViewMatrix()
