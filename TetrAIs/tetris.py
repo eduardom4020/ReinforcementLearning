@@ -2,10 +2,10 @@
 #-*- coding: utf-8 -*-
 
 # NOTE FOR WINDOWS USERS:
-# You can download a "exefied" version of this game at:
+# You can download a "exefied" version of self game at:
 # http://hi-im.laria.me/progs/tetris_py_exefied.zip
-# If a DLL is missing or something like this, write an E-Mail (me@laria.me)
-# or leave a comment on this gist.
+# If a DLL is missing or something like self, write an E-Mail (me@laria.me)
+# or leave a comment on self gist.
 
 # Very simple tetris implementation
 # 
@@ -22,13 +22,13 @@
 # Copyright (c) 2010 "Laria Carolin Chabowski"<me@laria.me>
 # 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
-# of this software and associated documentation files (the "Software"), to deal
+# of self software and associated documentation files (the "Software"), to deal
 # in the Software without restriction, including without limitation the rights
 # to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 # copies of the Software, and to permit persons to whom the Software is
 # furnished to do so, subject to the following conditions:
 # 
-# The above copyright notice and this permission notice shall be included in
+# The above copyright notice and self permission notice shall be included in
 # all copies or substantial portions of the Software.
 # 
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
@@ -39,8 +39,15 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+
+#-- for debug in windows
+import os
+clear = lambda: os.system('cls')
+
+from copy import deepcopy
 from random import randrange as rand
 from random import randint
+from random import random
 import pygame, sys
 import tensorflow as tf
 
@@ -50,6 +57,7 @@ cols =		10
 rows =		22
 maxfps = 	30
 play_game = False;
+train = True;
 
 #agent view
 agent_view_cell_size = 1
@@ -91,8 +99,8 @@ tetris_shapes = [
 
 def rotate_clockwise(shape):
 	return [ [ shape[y][x]
-			for y in xrange(len(shape)) ]
-		for x in xrange(len(shape[0]) - 1, -1, -1) ]
+			for y in range(len(shape)) ]
+		for x in range(len(shape[0]) - 1, -1, -1) ]
 
 def check_collision(board, shape, offset):
 	off_x, off_y = offset
@@ -107,7 +115,7 @@ def check_collision(board, shape, offset):
 
 def remove_row(board, row):
 	del board[row]
-	return [[0 for i in xrange(cols)]] + board
+	return [[0 for i in range(cols)]] + board
 	
 def join_matrixes(mat1, mat2, mat2_off):
 	off_x, off_y = mat2_off
@@ -117,9 +125,9 @@ def join_matrixes(mat1, mat2, mat2_off):
 	return mat1
 
 def new_board():
-	board = [ [ 0 for x in xrange(cols) ]
-			for y in xrange(rows) ]
-	board += [[ 1 for x in xrange(cols)]]
+	board = [ [ 0 for x in range(cols) ]
+			for y in range(rows) ]
+	board += [[ 1 for x in range(cols)]]
 	return board
 
 class TetrisApp(object):
@@ -129,7 +137,7 @@ class TetrisApp(object):
 		self.width = cell_size*(cols+5)
 		self.height = cell_size*rows
 		self.rlim = cell_size*cols
-		self.bground_grid = [[ 8 if x%2==y%2 else 0 for x in xrange(cols)] for y in xrange(rows)]
+		self.bground_grid = [[ 8 if x%2==y%2 else 0 for x in range(cols)] for y in range(rows)]
 		
 		self.default_font =  pygame.font.Font(
 			pygame.font.get_default_font(), 12)
@@ -279,44 +287,175 @@ class TetrisApp(object):
 	################# LEARNING AND RUNNING #################################################
 
 	def agentViewMatrix(self):
-                #return pygame.surfarray.array2d(pygame.Surface())
+		result = deepcopy(self.board)
+
+		for y, row in enumerate(self.stone):
+			for x, square in enumerate(row):
+				result[self.stone_y + y][self.stone_x + x] = square
+
+		return result
+
 
 	def initializeAgent(self):
-		session = tf.Session()
+		self.session = tf.Session()
 
-		NUM_STATES = cols * rows
 		NUM_ACTIONS = 5
 
-		state = tf.placeholder("float", [None, NUM_STATES])
-		targets = tf.placeholder("float", [None, NUM_ACTIONS])
+		CONV_WIDTH = 4
+		CONV_HEIGHT = 9
 
-	def _qvalues(observ):
-		with tf.variable_scope('qvalues', reuse=True):
-        
-			# Network from DQN (Mnih 2015)
-			h1 = tf.layers.conv2d(observ, 32, 8, 4, tf.nn.relu)
-			h2 = tf.layers.conv2d(h1, 64, 4, 2, tf.nn.relu)
-			h3 = tf.layers.conv2d(h2, 64, 3, 1, tf.nn.relu)
-			h4 = tf.layers.dense(h3, 512, tf.nn.relu)
-        
-			return tf.layers.dense(h4, num_actions, None)
+		FEATURES_LAYER_1 = 64
+		FEATURES_LAYER_2 = 128
+		NETWORK_OUTPUTS = 512
 
-	#current = tf.gather(_qvalues(observ), action)[:, 0]
-	#target = reward + gamma * tf.reduce_max(_qvalues(nextob), 1)
-	#target = tf.where(done, tf.zeros_like(target), target)
-	#loss = (current - target) ** 2
+		LEARNING_RATE = 0.001
 
-	def run(self):
-		key_actions = {
-			'ESCAPE':	self.quit,
-			'LEFT':		lambda:self.move(-1),
-			'RIGHT':	lambda:self.move(+1),
-			'DOWN':		lambda:self.drop(True),
-			'UP':		self.rotate_stone,
-			'p':		self.toggle_pause,
-			'SPACE':	self.start_game,
-			'RETURN':	self.insta_drop
-		}
+		EPOCHS = 100
+
+
+
+
+		game_resolution = (cols, rows)
+		self.state = tf.placeholder(tf.float32, shape= [None] + list(game_resolution) + [1], name='State')
+		self.targets = tf.placeholder(tf.float32, shape=[None, NUM_ACTIONS], name='TargetQ')
+
+		self.conv_width = CONV_WIDTH
+		self.conv_height = CONV_HEIGHT
+		self.features_layer_1 = FEATURES_LAYER_1
+		self.features_layer_2 = FEATURES_LAYER_2
+		self.network_outputs = NETWORK_OUTPUTS
+		self.learning_rate = LEARNING_RATE
+		self.num_actions = NUM_ACTIONS
+
+		self.session = tf.Session()
+		self.epochs = EPOCHS
+
+
+	def create_network(self):
+		    # Add 2 convolutional layers with ReLu activation
+		    conv1 = tf.contrib.layers.convolution2d(self.state, num_outputs=self.features_layer_1, kernel_size=[self.conv_width, self.conv_height], stride=[2, 5],
+		                                            activation_fn=tf.nn.relu,
+		                                            weights_initializer=tf.contrib.layers.xavier_initializer_conv2d(),
+		                                            biases_initializer=tf.constant_initializer(0.1))
+		    conv2 = tf.contrib.layers.convolution2d(conv1, num_outputs=self.features_layer_2, kernel_size=[self.conv_width, self.conv_height], stride=[2, 5],
+		                                            activation_fn=tf.nn.relu,
+		                                            weights_initializer=tf.contrib.layers.xavier_initializer_conv2d(),
+		                                            biases_initializer=tf.constant_initializer(0.1))
+
+		    #final layer, between actions and the net
+		    conv2_flat = tf.contrib.layers.flatten(conv2)
+
+		    fc1 = tf.contrib.layers.fully_connected(conv2_flat, num_outputs=self.network_outputs, activation_fn=tf.nn.relu,
+		                                            weights_initializer=tf.contrib.layers.xavier_initializer(),
+		                                            biases_initializer=tf.constant_initializer(0.1))
+
+		    is_in_training = tf.placeholder(tf.bool)
+		    fc1_drop = tf.contrib.layers.dropout(fc1, keep_prob=0.7, is_training=is_in_training)
+
+		    q = tf.contrib.layers.fully_connected(fc1_drop, num_outputs=self.num_actions, activation_fn=None,
+		                                          weights_initializer=tf.contrib.layers.xavier_initializer(),
+		                                          biases_initializer=tf.constant_initializer(0.1))
+		    best_a = tf.argmax(q, 1)
+
+		    loss = tf.losses.mean_squared_error(q, self.targets)
+
+		    optimizer = tf.train.RMSPropOptimizer(self.learning_rate)
+		    # Update the parameters according to the computed gradient using RMSProp.
+		    train_step = optimizer.minimize(loss)
+
+		    def function_learn(s1, target_q, is_training):
+		        feed_dict = {self.state: s1, self.targets: target_q, is_in_training: is_training}
+		        l, _ = self.session.run([loss, train_step], feed_dict=feed_dict)
+		        return l
+
+		    def function_get_q_values(state, is_training):
+		        return self.session.run(q, feed_dict={self.state: state, is_in_training: is_training})
+
+		    def function_simple_get_q_values(state, is_training):
+		        return function_get_q_values(state.reshape([1, cols, rows, 1]), is_training)[0]
+
+		    def function_get_best_action(state, is_training):
+		        return self.session.run(best_a, feed_dict={self.state: state, is_in_training: is_training})
+
+		    def function_simple_get_best_action(state, is_training):
+		    	return function_get_best_action(state.reshape([1, cols, rows, 1]), is_training)[0]
+		    
+		    return function_learn, function_get_q_values, function_simple_get_best_action, function_simple_get_q_values
+
+    def exploration_rate(epoch):
+	    start_eps = 1.0
+	    end_eps = 0.1
+	    const_eps_epochs = 0.1 * self.epochs
+	    eps_decay_epochs = 0.6 * self.epochs
+
+	    if load_model:
+	        return end_eps
+	    else:
+	        if epoch < const_eps_epochs:
+	            return start_eps
+	        elif epoch < eps_decay_epochs:
+	            return start_eps - (epoch - const_eps_epochs) / \
+	                               (eps_decay_epochs - const_eps_epochs) * (start_eps - end_eps)
+	        else:
+	            return end_eps
+                
+	def perform_learning_step(eps):
+	    
+	    s1 = self.agentViewMatrix()
+
+	#    eps = epsilon_list(epoch)
+	    if random() <= eps:
+	        a = randint(0, len(self.num_actions) - 1)
+	    else:
+	        a = get_best_action(s1, True)
+	        
+	    #TODO: make the learning step algorithm
+
+	    reward = 
+	    
+	    isterminal = game.is_episode_finished()
+	    s2 = preprocess(game.get_state().screen_buffer) if not isterminal else None
+
+	    memory.add_transition(s1, a, s2, isterminal, reward)
+
+	    if memory.size > batch_size:
+	        s1, a, s2, isterminal, r = memory.get_sample(batch_size)
+
+	        q2 = np.max(get_q_values(s2, True), axis=1)
+	        target_q = get_q_values(s1, True)
+
+	        target_q[np.arange(target_q.shape[0]), a] = r + discount_factor * (1-isterminal) * q2
+
+	        learn(s1, target_q, True)
+
+	        
+	def sim_perform_step(eps):
+	    
+	    if random() <= eps:
+	        # is_random, random_action, -1 (only to complete number of args)
+	        return 1, randint(0, len(actions) - 1), -1
+	    else:
+	        s1 = preprocess(game.get_state().screen_buffer)
+	        # is not random, action without dropout, action with dropout
+	        return 0, get_best_action(s1, False), get_best_action(s1, True)
+    
+
+    def run(self):
+		self.initializeAgent()
+
+		learn, get_q_values, get_best_action, simple_q = self.create_network()
+		#saver = tf.train.Saver()
+
+    	#key_actions = {
+    	#	'ESCAPE':	self.quit,
+		#	'LEFT':		lambda:self.move(-1),
+		#	'RIGHT':	lambda:self.move(+1),
+		#	'DOWN':		lambda:self.drop(True),
+		#	'UP':		self.rotate_stone,
+		#	'p':		self.toggle_pause,
+		#	'SPACE':	self.start_game,
+		#	'RETURN':	self.insta_drop
+		#}
 
 		agent_key_actions = {
 			'LEFT':		lambda:self.move(-1),
@@ -330,10 +469,11 @@ class TetrisApp(object):
 		self.paused = False
 		
 		dont_burn_my_cpu = pygame.time.Clock()
-		while 1:
+
+		for epoch in range(self.epochs)
 			self.screen.fill((0,0,0))
 			if self.gameover:
-				if(play_game):
+				if(not train):
 					self.center_msg("""Game Over!\nYour score: %dPress space to continue""" % self.score)
 
 				#end of episode here
@@ -367,22 +507,26 @@ class TetrisApp(object):
 					self.drop(False)
 				elif event.type == pygame.QUIT:
 					self.quit()
-				elif event.type == pygame.KEYDOWN and play_game:
-					for key in key_actions:
-						if event.key == eval("pygame.K_"
-						+key):
-							key_actions[key]()
 
-			#agent
-			#random agent moves
+			#perform learn step
+			if(train):
+				eps = exploration_rate(epoch)
 
-                        if(not play_game):
-                                for key in agent_key_actions:
-                                        if(randint(0, 99) < 15):
-                                                agent_key_actions[key]()
 
-                                for row in self.agentViewMatrix():
-                                        print(row)
+				#elif event.type == pygame.KEYDOWN and play_game:
+				#	for key in key_actions:
+				#		if event.key == eval("pygame.K_"+key):
+				#			key_actions[key]()
+
+			#if(not play_game):
+			#	for key in agent_key_actions:
+			#		if(randint(0,99) < 15):
+			#			agent_key_actions[key]()
+
+			#for row in self.agentViewMatrix():
+			#	print (row)
+
+			#clear()
 					
 			dont_burn_my_cpu.tick(maxfps)
 
